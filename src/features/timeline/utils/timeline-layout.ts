@@ -3,6 +3,8 @@
  * caller passes `nowMinute` in. That makes every function here trivial to test
  * and is where most of the domain's TypeScript lives.
  */
+import type { Category } from "@/types/category";
+import type { ColorToken } from "@/theme/colors";
 import type { Block } from "@/types/block";
 
 /**
@@ -22,9 +24,18 @@ export function sortByStart(blocks: readonly Block[]): Block[] {
   );
 }
 
-/** Classify a block against the current wall-clock minute. */
-export function getBlockStatus(block: Block, now: number): BlockStatus {
-  if (block.completedAt !== null) {
+/**
+ * Classify a block against the current wall-clock minute. `isDone` is looked
+ * up by the caller from the completions list (see types/completion.ts) —
+ * completion is not a field on `Block`, so it can vary per occurrence of a
+ * recurring block.
+ */
+export function getBlockStatus(
+  block: Block,
+  now: number,
+  isDone: boolean,
+): BlockStatus {
+  if (isDone) {
     return "completed";
   }
   if (now >= block.startMinute && now < block.endMinute) {
@@ -34,6 +45,25 @@ export function getBlockStatus(block: Block, now: number): BlockStatus {
     return "past";
   }
   return "upcoming";
+}
+
+/**
+ * The color a block should render with: its own override if set, otherwise
+ * its category's color, otherwise the neutral fallback.
+ */
+export function resolveBlockColor(
+  block: Pick<Block, "color">,
+  category: Category | undefined,
+): ColorToken {
+  return block.color ?? category?.color ?? "stone";
+}
+
+/** The icon a block should render with: its own, otherwise its category's. */
+export function resolveBlockIcon(
+  block: Pick<Block, "icon">,
+  category: Category | undefined,
+): string | undefined {
+  return block.icon ?? category?.icon;
 }
 
 /**

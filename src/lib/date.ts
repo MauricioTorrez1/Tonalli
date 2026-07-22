@@ -39,3 +39,39 @@ export function speakMinute(minute: number): string {
   const minutes = minute % 60;
   return `${hours}:${String(minutes).padStart(2, "0")}`;
 }
+
+/**
+ * ISO weekday for a `YYYY-MM-DD` day string: 1 = Monday ... 7 = Sunday. Used
+ * throughout the domain (recurrence rules) since it matches the Mexican/
+ * international week start. JS `Date.getDay()` (0 = Sunday) is only used at
+ * the notification-scheduling boundary, where Expo's API expects it — see
+ * features/notifications/triggers.ts.
+ */
+export function isoWeekday(day: DayString): number {
+  const jsDay = new Date(`${day}T00:00:00`).getDay();
+  return jsDay === 0 ? 7 : jsDay;
+}
+
+/** Monday through Friday. */
+export function isWeekday(day: DayString): boolean {
+  const weekday = isoWeekday(day);
+  return weekday >= 1 && weekday <= 5;
+}
+
+/** Add `count` days to a `YYYY-MM-DD` string, returning a new day string. */
+export function addDays(day: DayString, count: number): DayString {
+  const date = new Date(`${day}T00:00:00`);
+  date.setDate(date.getDate() + count);
+  return todayString(date);
+}
+
+/**
+ * Combine a wall-clock day and minute into a concrete local `Date`. The
+ * `T...` form (no `Z`/offset suffix) makes JS parse it in the device's local
+ * timezone, matching the wall-clock model everywhere else in the domain.
+ */
+export function dateFromDayMinute(day: DayString, minute: number): Date {
+  const hours = String(Math.floor(minute / 60)).padStart(2, "0");
+  const minutes = String(minute % 60).padStart(2, "0");
+  return new Date(`${day}T${hours}:${minutes}:00`);
+}

@@ -19,12 +19,16 @@ const minuteSchema = z
   .max(MINUTES_IN_DAY - 1);
 
 /**
- * A single time block on a given day.
+ * A single time block, or the template for a recurring series.
  *
  * Time is stored as wall-clock (a `day` string plus minute offsets), never as
  * an absolute UTC instant — a block at 09:00 means 9am wherever the user is.
  * Only the audit fields (`createdAt`, `updatedAt`) are absolute epoch millis.
  * See docs/adr/0002-wall-clock-time-model.md.
+ *
+ * `color` is optional and, when omitted, falls back to the block's category
+ * color (see resolveBlockColor). Completion is tracked separately as a
+ * `Completion` record, not as a field here — see types/completion.ts.
  */
 export const blockSchema = z
   .object({
@@ -32,11 +36,13 @@ export const blockSchema = z
     title: z.string().min(1),
     notes: z.string().optional(),
     icon: z.string().optional(),
-    color: colorTokenSchema,
+    color: colorTokenSchema.optional(),
+    categoryId: z.string().optional(),
     day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "day must be YYYY-MM-DD"),
     startMinute: minuteSchema,
     endMinute: minuteSchema,
-    completedAt: z.number().int().nullable(),
+    /** Set only when this block is the template of a recurring series. */
+    recurrenceId: z.string().optional(),
     createdAt: z.number().int(),
     updatedAt: z.number().int(),
   })
