@@ -50,25 +50,46 @@ describe("sortByStart", () => {
 });
 
 describe("getBlockStatus", () => {
+  const today = "2026-07-22";
+
   it("returns 'completed' whenever isDone is true, regardless of time", () => {
-    const block = makeBlock({ startMinute: 540, endMinute: 600 });
-    expect(getBlockStatus(block, 545, true)).toBe("completed");
+    const block = makeBlock({ day: today, startMinute: 540, endMinute: 600 });
+    expect(getBlockStatus(block, 545, true, today)).toBe("completed");
   });
 
-  it("returns 'current' when now is within the block", () => {
-    const block = makeBlock({ startMinute: 540, endMinute: 600 });
-    expect(getBlockStatus(block, 570, false)).toBe("current");
+  it("returns 'current' when now is within the block, on today", () => {
+    const block = makeBlock({ day: today, startMinute: 540, endMinute: 600 });
+    expect(getBlockStatus(block, 570, false, today)).toBe("current");
   });
 
   it("treats the start minute as inclusive and the end as exclusive", () => {
-    const block = makeBlock({ startMinute: 540, endMinute: 600 });
-    expect(getBlockStatus(block, 540, false)).toBe("current");
-    expect(getBlockStatus(block, 600, false)).toBe("past");
+    const block = makeBlock({ day: today, startMinute: 540, endMinute: 600 });
+    expect(getBlockStatus(block, 540, false, today)).toBe("current");
+    expect(getBlockStatus(block, 600, false, today)).toBe("past");
   });
 
-  it("returns 'upcoming' before the block starts", () => {
-    const block = makeBlock({ startMinute: 540, endMinute: 600 });
-    expect(getBlockStatus(block, 400, false)).toBe("upcoming");
+  it("returns 'upcoming' before the block starts, on today", () => {
+    const block = makeBlock({ day: today, startMinute: 540, endMinute: 600 });
+    expect(getBlockStatus(block, 400, false, today)).toBe("upcoming");
+  });
+
+  it("is always 'past' on a day before today, regardless of clock time", () => {
+    const block = makeBlock({
+      day: "2026-07-20",
+      startMinute: 540,
+      endMinute: 600,
+    });
+    // now=570 falls inside the block's minute range, but the day is history.
+    expect(getBlockStatus(block, 570, false, today)).toBe("past");
+  });
+
+  it("is always 'upcoming' on a day after today, regardless of clock time", () => {
+    const block = makeBlock({
+      day: "2026-07-25",
+      startMinute: 540,
+      endMinute: 600,
+    });
+    expect(getBlockStatus(block, 570, false, today)).toBe("upcoming");
   });
 });
 

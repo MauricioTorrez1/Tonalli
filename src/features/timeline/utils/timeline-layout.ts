@@ -3,6 +3,7 @@
  * caller passes `nowMinute` in. That makes every function here trivial to test
  * and is where most of the domain's TypeScript lives.
  */
+import type { DayString } from "@/lib/date";
 import type { Category } from "@/types/category";
 import type { ColorToken } from "@/theme/colors";
 import type { Block } from "@/types/block";
@@ -25,18 +26,32 @@ export function sortByStart(blocks: readonly Block[]): Block[] {
 }
 
 /**
- * Classify a block against the current wall-clock minute. `isDone` is looked
- * up by the caller from the completions list (see types/completion.ts) —
- * completion is not a field on `Block`, so it can vary per occurrence of a
- * recurring block.
+ * Classify a block relative to the current moment. `isDone` is looked up by
+ * the caller from the completions list (see types/completion.ts) — completion
+ * is not a field on `Block`, so it can vary per occurrence of a recurring
+ * block.
+ *
+ * `today` makes this day-aware: a block can only be "current" on the actual
+ * current day. A block on a day strictly before today is always "past"
+ * (history, whether or not it was done); one strictly after is always
+ * "upcoming" — clock-time comparison only applies on today itself. Without
+ * this, browsing to a future day whose blocks happen to share today's clock
+ * time would wrongly render one of them as happening "now".
  */
 export function getBlockStatus(
   block: Block,
   now: number,
   isDone: boolean,
+  today: DayString,
 ): BlockStatus {
   if (isDone) {
     return "completed";
+  }
+  if (block.day < today) {
+    return "past";
+  }
+  if (block.day > today) {
+    return "upcoming";
   }
   if (now >= block.startMinute && now < block.endMinute) {
     return "current";

@@ -31,7 +31,12 @@ import {
   requestPermission,
   scheduleForBlock,
 } from "@/features/notifications/schedule";
-import { dateFromDayMinute, formatMinute, todayString } from "@/lib/date";
+import {
+  dateFromDayMinute,
+  dayHeading,
+  formatMinute,
+  todayString,
+} from "@/lib/date";
 import { useBlockStore } from "@/store/block-store";
 import { BLOCK_COLOR_TOKENS, type ColorToken } from "@/theme/colors";
 import { CATEGORY_STYLES } from "@/theme/category-styles";
@@ -133,12 +138,20 @@ export default function BlockFormScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const themeColors = useThemeColors();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, day: dayParam } = useLocalSearchParams<{
+    id?: string;
+    day?: string;
+  }>();
   const isEditing = Boolean(id);
 
   const existingBlock = useBlockStore((state) =>
     id ? state.blocks.find((b) => b.id === id) : undefined,
   );
+  const today = todayString();
+  // The day this block belongs to: its own anchor day when editing, the day
+  // the user was viewing on the timeline when creating (falls back to today
+  // if opened without that param, e.g. a deep link).
+  const targetDay = existingBlock?.day ?? dayParam ?? today;
   const existingRecurrence = useBlockStore((state) =>
     existingBlock?.recurrenceId
       ? state.recurrences.find((r) => r.id === existingBlock.recurrenceId)
@@ -170,12 +183,12 @@ export default function BlockFormScreen() {
   const [startDate, setStartDate] = useState(() =>
     existingBlock
       ? dateFromDayMinute(existingBlock.day, existingBlock.startMinute)
-      : dateFromDayMinute(todayString(), 9 * 60),
+      : dateFromDayMinute(targetDay, 9 * 60),
   );
   const [endDate, setEndDate] = useState(() =>
     existingBlock
       ? dateFromDayMinute(existingBlock.day, existingBlock.endMinute)
-      : dateFromDayMinute(todayString(), 10 * 60),
+      : dateFromDayMinute(targetDay, 10 * 60),
   );
   const [freq, setFreq] = useState<"none" | RecurrenceFreq>(
     existingRecurrence?.freq ?? "none",
@@ -211,14 +224,13 @@ export default function BlockFormScreen() {
     if (existingRecurrence) {
       deleteRecurrence(existingRecurrence.id);
     }
-    const day = existingBlock?.day ?? todayString();
     const newRecurrence =
       freq === "none"
         ? undefined
         : addRecurrence({
             freq,
             byWeekday: freq === "weekly" ? byWeekday : undefined,
-            startsOn: day,
+            startsOn: targetDay,
           });
 
     const input: NewBlock = {
@@ -226,7 +238,7 @@ export default function BlockFormScreen() {
       notes: notes.trim() || undefined,
       color: colorOverride,
       categoryId,
-      day,
+      day: targetDay,
       startMinute,
       endMinute,
       recurrenceId: newRecurrence?.id,
@@ -301,9 +313,16 @@ export default function BlockFormScreen() {
         >
           <Feather name="x" size={22} color={themeColors.icon} />
         </Pressable>
-        <Text className="font-raleway-semibold text-base text-ink dark:text-ink-inverse">
-          {isEditing ? "Editar bloque" : "Nuevo bloque"}
-        </Text>
+        <View className="items-center">
+          <Text className="font-raleway-semibold text-base text-ink dark:text-ink-inverse">
+            {isEditing ? "Editar bloque" : "Nuevo bloque"}
+          </Text>
+          {targetDay !== today ? (
+            <Text className="font-raleway-medium text-xs text-ink-soft dark:text-ink-invsoft">
+              {dayHeading(targetDay, today)}
+            </Text>
+          ) : null}
+        </View>
         <Pressable
           onPress={handleSave}
           hitSlop={12}

@@ -1,7 +1,8 @@
 /**
  * The day view: a vertical spine of block nodes with the "now" marker woven in
- * at the current time. Uses a plain ScrollView — a day holds ~30 blocks at
- * most, well under the point where list virtualization earns its complexity.
+ * at the current time — only when the viewed day actually is today. Uses a
+ * plain ScrollView — a day holds ~30 blocks at most, well under the point
+ * where list virtualization earns its complexity.
  */
 import { useRouter } from "expo-router";
 import { Fragment } from "react";
@@ -9,7 +10,7 @@ import { ScrollView, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { findCategory } from "@/features/categories/default-categories";
-import { nowMinute } from "@/lib/date";
+import { nowMinute, todayString, type DayString } from "@/lib/date";
 import { useBlockStore } from "@/store/block-store";
 import type { Block } from "@/types/block";
 import { isCompleted } from "../utils/completions";
@@ -24,19 +25,23 @@ import { NowIndicator } from "./NowIndicator";
 import { TimelineNode } from "./TimelineNode";
 
 interface DayTimelineProps {
+  /** The day being viewed, e.g. from the week strip — not necessarily today. */
+  day: DayString;
   blocks: Block[];
-  /** Human title for the day, e.g. "Hoy". */
+  /** Human title for the day, e.g. "Hoy" or "Miércoles 22". */
   heading: string;
 }
 
-export function DayTimeline({ blocks, heading }: DayTimelineProps) {
+export function DayTimeline({ day, blocks, heading }: DayTimelineProps) {
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const router = useRouter();
   const completions = useBlockStore((state) => state.completions);
   const toggleComplete = useBlockStore((state) => state.toggleComplete);
+  const today = todayString();
+  const isToday = day === today;
   const now = nowMinute();
-  const indicatorAt = nowIndicatorIndex(blocks, now);
+  const indicatorAt = isToday ? nowIndicatorIndex(blocks, now) : -1;
 
   return (
     <ScrollView
@@ -53,7 +58,9 @@ export function DayTimeline({ blocks, heading }: DayTimelineProps) {
 
       {blocks.length === 0 ? (
         <Text className="mt-12 text-center font-raleway text-ink-muted dark:text-ink-invmuted">
-          Aún no hay bloques para hoy. Toca + para crear el primero.
+          {isToday
+            ? "Aún no hay bloques para hoy. Toca + para crear el primero."
+            : "No hay bloques este día."}
         </Text>
       ) : (
         blocks.map((block, index) => {
@@ -66,7 +73,7 @@ export function DayTimeline({ blocks, heading }: DayTimelineProps) {
               ) : null}
               <TimelineNode
                 block={block}
-                status={getBlockStatus(block, now, isDone)}
+                status={getBlockStatus(block, now, isDone, today)}
                 color={resolveBlockColor(block, category)}
                 icon={resolveBlockIcon(block, category)}
                 index={index}

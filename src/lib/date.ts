@@ -75,3 +75,41 @@ export function dateFromDayMinute(day: DayString, minute: number): Date {
   const minutes = String(minute % 60).padStart(2, "0");
   return new Date(`${day}T${hours}:${minutes}:00`);
 }
+
+/** Monday-first initials, indexed by ISO weekday - 1. */
+export const WEEKDAY_SHORT_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
+
+/** Monday-first full names, indexed by ISO weekday - 1. */
+export const WEEKDAY_FULL_NAMES = [
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+  "Domingo",
+];
+
+/** The Monday (ISO weekday 1) of the week containing `day`. */
+export function startOfWeek(day: DayString): DayString {
+  return addDays(day, -(isoWeekday(day) - 1));
+}
+
+/** The seven days (Monday–Sunday) of the week containing `day`. */
+export function weekDays(day: DayString): DayString[] {
+  const start = startOfWeek(day);
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
+/**
+ * A heading for the day screen: "Hoy" for today, otherwise the weekday name
+ * and day-of-month, e.g. "Miércoles 22".
+ */
+export function dayHeading(day: DayString, today: DayString): string {
+  if (day === today) {
+    return "Hoy";
+  }
+  const weekdayName = WEEKDAY_FULL_NAMES[isoWeekday(day) - 1];
+  const dayOfMonth = Number(day.slice(8, 10));
+  return `${weekdayName} ${dayOfMonth}`;
+}
