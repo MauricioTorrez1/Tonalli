@@ -11,11 +11,17 @@ export declare const colors: {
   sand: string;
   night: string;
   nightSurface: string;
+  nightRaised: string;
   ink: {
     DEFAULT: string;
     muted: string;
     soft: string;
     inverse: string;
     invmuted: string;
+    invsoft: string;
   };
+  category: Record<
+    "sky" | "mint" | "amber" | "violet" | "rose" | "stone",
+    { solid: string; soft: string }
+  >;
 };
