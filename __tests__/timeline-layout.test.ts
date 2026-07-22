@@ -1,8 +1,11 @@
+import type { Category } from "@/types/category";
 import type { Block } from "@/types/block";
 import {
   getBlockStatus,
   hasOverlap,
   nowIndicatorIndex,
+  resolveBlockColor,
+  resolveBlockIcon,
   sortByStart,
 } from "@/features/timeline/utils/timeline-layout";
 
@@ -11,11 +14,9 @@ function makeBlock(overrides: Partial<Block> = {}): Block {
   return {
     id: "00000000-0000-4000-8000-000000000000",
     title: "Test",
-    color: "sage",
     day: "2026-07-22",
     startMinute: 540,
     endMinute: 600,
-    completedAt: null,
     createdAt: 0,
     updatedAt: 0,
     ...overrides,
@@ -49,29 +50,57 @@ describe("sortByStart", () => {
 });
 
 describe("getBlockStatus", () => {
-  it("returns 'completed' whenever completedAt is set, regardless of time", () => {
-    const block = makeBlock({
-      startMinute: 540,
-      endMinute: 600,
-      completedAt: 123,
-    });
-    expect(getBlockStatus(block, 545)).toBe("completed");
+  it("returns 'completed' whenever isDone is true, regardless of time", () => {
+    const block = makeBlock({ startMinute: 540, endMinute: 600 });
+    expect(getBlockStatus(block, 545, true)).toBe("completed");
   });
 
   it("returns 'current' when now is within the block", () => {
     const block = makeBlock({ startMinute: 540, endMinute: 600 });
-    expect(getBlockStatus(block, 570)).toBe("current");
+    expect(getBlockStatus(block, 570, false)).toBe("current");
   });
 
   it("treats the start minute as inclusive and the end as exclusive", () => {
     const block = makeBlock({ startMinute: 540, endMinute: 600 });
-    expect(getBlockStatus(block, 540)).toBe("current");
-    expect(getBlockStatus(block, 600)).toBe("past");
+    expect(getBlockStatus(block, 540, false)).toBe("current");
+    expect(getBlockStatus(block, 600, false)).toBe("past");
   });
 
   it("returns 'upcoming' before the block starts", () => {
     const block = makeBlock({ startMinute: 540, endMinute: 600 });
-    expect(getBlockStatus(block, 400)).toBe("upcoming");
+    expect(getBlockStatus(block, 400, false)).toBe("upcoming");
+  });
+});
+
+describe("resolveBlockColor", () => {
+  const category: Category = { id: "x", name: "X", color: "mint", icon: "🌿" };
+
+  it("prefers the block's own color override", () => {
+    expect(resolveBlockColor({ color: "rose" }, category)).toBe("rose");
+  });
+
+  it("falls back to the category color", () => {
+    expect(resolveBlockColor({ color: undefined }, category)).toBe("mint");
+  });
+
+  it("falls back to the neutral token when there is no category either", () => {
+    expect(resolveBlockColor({ color: undefined }, undefined)).toBe("stone");
+  });
+});
+
+describe("resolveBlockIcon", () => {
+  const category: Category = { id: "x", name: "X", color: "mint", icon: "🌿" };
+
+  it("prefers the block's own icon", () => {
+    expect(resolveBlockIcon({ icon: "🔥" }, category)).toBe("🔥");
+  });
+
+  it("falls back to the category icon", () => {
+    expect(resolveBlockIcon({ icon: undefined }, category)).toBe("🌿");
+  });
+
+  it("returns undefined when neither is set", () => {
+    expect(resolveBlockIcon({ icon: undefined }, undefined)).toBeUndefined();
   });
 });
 

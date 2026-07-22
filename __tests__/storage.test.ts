@@ -8,11 +8,10 @@ const KEY = "test-key";
 const validBlock = {
   id: "00000000-0000-4000-8000-000000000000",
   title: "Deep work",
-  color: "sage" as const,
+  color: "sky" as const,
   day: "2026-07-22",
   startMinute: 540,
   endMinute: 660,
-  completedAt: null,
   createdAt: 0,
   updatedAt: 0,
 };
