@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "TonalliBlock",
+    "slug": "tonalliblock",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "tonalliblock",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "mx.tonalliblock.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "mx.tonalliblock.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FAF7F2"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FAF7F2",
+          "imageWidth": 120,
+          "dark": {
+            "backgroundColor": "#1C1A17"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
