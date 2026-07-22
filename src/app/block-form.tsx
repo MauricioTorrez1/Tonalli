@@ -31,7 +31,7 @@ import {
   requestPermission,
   scheduleForBlock,
 } from "@/features/notifications/schedule";
-import { dateFromDayMinute, todayString } from "@/lib/date";
+import { dateFromDayMinute, formatMinute, todayString } from "@/lib/date";
 import { useBlockStore } from "@/store/block-store";
 import { BLOCK_COLOR_TOKENS, type ColorToken } from "@/theme/colors";
 import { CATEGORY_STYLES } from "@/theme/category-styles";
@@ -53,6 +53,80 @@ const FREQ_LABELS: Record<"none" | RecurrenceFreq, string> = {
 
 function minuteFromDate(date: Date): number {
   return date.getHours() * 60 + date.getMinutes();
+}
+
+interface TimeFieldProps {
+  label: string;
+  value: Date;
+  onChange: (date: Date) => void;
+  isDark: boolean;
+}
+
+/**
+ * A single start/end time field. iOS and Android need genuinely different
+ * layouts, not just different `display` props on the same markup — mounting
+ * both a custom "09:00" card *and* an always-visible native `compact` picker
+ * underneath it (the previous approach) rendered as two redundant, badly
+ * stacked time controls. Now there is exactly one visible control per
+ * platform:
+ * - iOS: the native `compact` picker *is* the field — a small tappable native
+ *   chip, inline inside our card.
+ * - Android: `compact`/inline display isn't supported, so a custom card shows
+ *   the time and opens the native dialog on tap; the picker itself is only
+ *   mounted (which is what triggers the dialog) while `show` is true.
+ */
+function TimeField({ label, value, onChange, isDark }: TimeFieldProps) {
+  const [show, setShow] = useState(false);
+
+  if (Platform.OS === "ios") {
+    return (
+      <View className="flex-1 rounded-card border border-sand bg-cream px-4 py-2 dark:border-nightRaised dark:bg-nightSurface">
+        <Text className="mb-1 font-raleway-medium text-xs text-ink-soft dark:text-ink-invsoft">
+          {label}
+        </Text>
+        <DateTimePicker
+          value={value}
+          mode="time"
+          display="compact"
+          themeVariant={isDark ? "dark" : "light"}
+          onChange={(_event, selected) => {
+            if (selected) onChange(selected);
+          }}
+          style={{ alignSelf: "flex-start", height: 28 }}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <Pressable
+        onPress={() => setShow(true)}
+        className="flex-1 rounded-card border border-sand bg-cream px-4 py-3 dark:border-nightRaised dark:bg-nightSurface"
+        accessibilityRole="button"
+        accessibilityLabel={label}
+      >
+        <Text className="font-raleway-medium text-xs text-ink-soft dark:text-ink-invsoft">
+          {label}
+        </Text>
+        <Text className="font-raleway-semibold text-base text-ink dark:text-ink-inverse">
+          {formatMinute(minuteFromDate(value))}
+        </Text>
+      </Pressable>
+      {show ? (
+        <DateTimePicker
+          value={value}
+          mode="time"
+          is24Hour
+          display="default"
+          onChange={(_event, selected) => {
+            setShow(false);
+            if (selected) onChange(selected);
+          }}
+        />
+      ) : null}
+    </>
+  );
 }
 
 export default function BlockFormScreen() {
@@ -103,9 +177,6 @@ export default function BlockFormScreen() {
       ? dateFromDayMinute(existingBlock.day, existingBlock.endMinute)
       : dateFromDayMinute(todayString(), 10 * 60),
   );
-  const [showStartPicker, setShowStartPicker] = useState(Platform.OS === "ios");
-  const [showEndPicker, setShowEndPicker] = useState(Platform.OS === "ios");
-
   const [freq, setFreq] = useState<"none" | RecurrenceFreq>(
     existingRecurrence?.freq ?? "none",
   );
@@ -364,59 +435,19 @@ export default function BlockFormScreen() {
           Horario
         </Text>
         <View className="flex-row gap-3">
-          <Pressable
-            onPress={() => setShowStartPicker(true)}
-            className="flex-1 rounded-card border border-sand bg-cream px-4 py-3 dark:border-nightRaised dark:bg-nightSurface"
-            accessibilityRole="button"
-            accessibilityLabel="Hora de inicio"
-          >
-            <Text className="font-raleway-medium text-xs text-ink-soft dark:text-ink-invsoft">
-              Inicio
-            </Text>
-            <Text className="font-raleway-semibold text-base text-ink dark:text-ink-inverse">
-              {startDate.getHours().toString().padStart(2, "0")}:
-              {startDate.getMinutes().toString().padStart(2, "0")}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setShowEndPicker(true)}
-            className="flex-1 rounded-card border border-sand bg-cream px-4 py-3 dark:border-nightRaised dark:bg-nightSurface"
-            accessibilityRole="button"
-            accessibilityLabel="Hora de fin"
-          >
-            <Text className="font-raleway-medium text-xs text-ink-soft dark:text-ink-invsoft">
-              Fin
-            </Text>
-            <Text className="font-raleway-semibold text-base text-ink dark:text-ink-inverse">
-              {endDate.getHours().toString().padStart(2, "0")}:
-              {endDate.getMinutes().toString().padStart(2, "0")}
-            </Text>
-          </Pressable>
-        </View>
-        {showStartPicker ? (
-          <DateTimePicker
+          <TimeField
+            label="Inicio"
             value={startDate}
-            mode="time"
-            is24Hour
-            display={Platform.OS === "ios" ? "compact" : "default"}
-            onChange={(_event, selected) => {
-              if (Platform.OS === "android") setShowStartPicker(false);
-              if (selected) setStartDate(selected);
-            }}
+            onChange={setStartDate}
+            isDark={themeColors.isDark}
           />
-        ) : null}
-        {showEndPicker ? (
-          <DateTimePicker
+          <TimeField
+            label="Fin"
             value={endDate}
-            mode="time"
-            is24Hour
-            display={Platform.OS === "ios" ? "compact" : "default"}
-            onChange={(_event, selected) => {
-              if (Platform.OS === "android") setShowEndPicker(false);
-              if (selected) setEndDate(selected);
-            }}
+            onChange={setEndDate}
+            isDark={themeColors.isDark}
           />
-        ) : null}
+        </View>
 
         {/* Repeat */}
         <Text className="mb-2 mt-6 font-raleway-semibold text-sm text-ink-soft dark:text-ink-invsoft">
