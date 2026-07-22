@@ -1,105 +1,140 @@
 /**
  * A single block rendered as a node on the vertical spine.
  *
- * Focus-first rule: only the *current* block is visually loud (terracotta
- * accent, full opacity). Every other state is deliberately quiet so the eye
- * lands on "now" without competing signals.
+ * Focus-first rule: only the *current* block is visually loud — a solid fill
+ * in its own category color. Every other state is a quiet, translucent
+ * outline of that same color, so the eye lands on "now" without the rest of
+ * the day competing for attention. See
+ * docs/adr/0006-vivid-category-colors-on-warm-black.md.
  */
+import { Feather } from "@expo/vector-icons";
 import { memo } from "react";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { formatMinute, speakMinute } from "@/lib/date";
+import { CATEGORY_STYLES } from "@/theme/category-styles";
+import type { ColorToken } from "@/theme/colors";
 import type { Block } from "@/types/block";
 import type { BlockStatus } from "../utils/timeline-layout";
 
 interface TimelineNodeProps {
   block: Block;
   status: BlockStatus;
+  color: ColorToken;
+  icon: string | undefined;
   /** Position in the list, used to stagger the entrance animation. */
   index: number;
   /** When true, skip the entrance animation entirely. */
   reducedMotion: boolean;
   /** False for the last node, so the spine does not run off the bottom. */
   hasNext: boolean;
+  onPress: () => void;
+  onToggleComplete: () => void;
 }
 
-const STATUS_STYLES: Record<
-  BlockStatus,
-  { card: string; dot: string; title: string; opacity: string }
-> = {
-  current: {
-    card: "bg-terracotta-50 border border-terracotta-500",
-    dot: "bg-terracotta-500 h-5 w-5",
-    title: "text-ink font-raleway-bold",
-    opacity: "opacity-100",
-  },
-  upcoming: {
-    card: "bg-cream border border-sand",
-    dot: "bg-sage-400 h-4 w-4",
-    title: "text-ink font-raleway-semibold",
-    opacity: "opacity-100",
-  },
-  past: {
-    card: "bg-cream border border-sand",
-    dot: "bg-sage-300 h-3 w-3",
-    title: "text-ink-muted font-raleway-medium",
-    opacity: "opacity-60",
-  },
-  completed: {
-    card: "bg-sage-50 border border-sage-200",
-    dot: "bg-sage-500 h-4 w-4",
-    title: "text-ink-muted font-raleway-medium line-through",
-    opacity: "opacity-70",
-  },
+const STATUS_LABEL: Record<BlockStatus, string> = {
+  current: "en curso",
+  upcoming: "pendiente",
+  past: "pasado",
+  completed: "completado",
 };
 
 function TimelineNodeComponent({
   block,
   status,
+  color,
+  icon,
   index,
   reducedMotion,
   hasNext,
+  onPress,
+  onToggleComplete,
 }: TimelineNodeProps) {
-  const styles = STATUS_STYLES[status];
-  const statusLabel: Record<BlockStatus, string> = {
-    current: "en curso",
-    upcoming: "pendiente",
-    past: "pasado",
-    completed: "completado",
-  };
+  const style = CATEGORY_STYLES[color];
+  const isCurrent = status === "current";
+  const isCompleted = status === "completed";
+  const isPast = status === "past";
 
   const accessibilityLabel = `${block.title}, de ${speakMinute(
     block.startMinute,
-  )} a ${speakMinute(block.endMinute)}, ${statusLabel[status]}`;
+  )} a ${speakMinute(block.endMinute)}, ${STATUS_LABEL[status]}`;
 
   return (
     <Animated.View
       entering={
         reducedMotion ? undefined : FadeInDown.delay(index * 60).duration(250)
       }
-      className={`flex-row ${styles.opacity}`}
-      accessibilityRole="text"
-      accessibilityLabel={accessibilityLabel}
+      className={isPast ? "flex-row opacity-60" : "flex-row"}
     >
       {/* Left rail: the spine plus this node's dot. */}
       <View className="w-10 items-center">
         {hasNext ? (
-          <View className="absolute top-6 bottom-0 w-0.5 bg-sand" />
+          <View className="absolute top-6 bottom-0 w-0.5 bg-sand dark:bg-nightRaised" />
         ) : null}
-        <View className={`mt-5 rounded-full ${styles.dot}`} />
+        <View
+          className={`mt-5 h-3.5 w-3.5 rounded-full ${style.dot}`}
+          accessibilityElementsHidden
+        />
       </View>
 
       {/* Right: the block card. */}
-      <View className={`mb-4 flex-1 rounded-card p-4 ${styles.card}`}>
-        <Text className="font-raleway-medium text-ink-soft text-xs">
-          {formatMinute(block.startMinute)} – {formatMinute(block.endMinute)}
-        </Text>
-        <Text className={`mt-1 text-base ${styles.title}`}>
-          {block.icon ? `${block.icon}  ` : ""}
-          {block.title}
-        </Text>
-      </View>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint="Toca para editar el bloque"
+        className={`mb-4 flex-1 flex-row items-center rounded-card border p-4 ${
+          isCurrent
+            ? `${style.solidBg} border-transparent`
+            : `${style.softBg} ${style.softBorder}`
+        }`}
+      >
+        <View className="flex-1">
+          <Text
+            className={`font-raleway-medium text-xs ${
+              isCurrent
+                ? "text-white/80"
+                : "text-ink-soft dark:text-ink-invsoft"
+            }`}
+          >
+            {formatMinute(block.startMinute)} – {formatMinute(block.endMinute)}
+          </Text>
+          <Text
+            className={`mt-1 text-base font-raleway-semibold ${
+              isCurrent
+                ? "text-white"
+                : isCompleted
+                  ? "text-ink-muted dark:text-ink-invmuted line-through"
+                  : "text-ink dark:text-ink-inverse"
+            }`}
+          >
+            {icon ? `${icon}  ` : ""}
+            {block.title}
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={onToggleComplete}
+          hitSlop={10}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: isCompleted }}
+          accessibilityLabel={
+            isCompleted ? "Marcar como pendiente" : "Marcar como completado"
+          }
+          className={`h-7 w-7 items-center justify-center rounded-full border-2 ${
+            isCompleted
+              ? "border-sage-500 bg-sage-500"
+              : isCurrent
+                ? "border-white/70"
+                : "border-ink-soft/40 dark:border-ink-invsoft/40"
+          }`}
+        >
+          {isCompleted ? (
+            <Feather name="check" size={14} color="white" />
+          ) : null}
+        </Pressable>
+      </Pressable>
     </Animated.View>
   );
 }

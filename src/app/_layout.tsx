@@ -11,12 +11,16 @@ import {
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import { colorScheme, useColorScheme } from "nativewind";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { ensureNotificationChannel } from "@/features/notifications/schedule";
 import { useBlockStore } from "@/store/block-store";
+import { useThemeStore } from "@/store/theme-store";
 
 SplashScreen.preventAutoHideAsync();
+ensureNotificationChannel();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -28,17 +32,28 @@ export default function RootLayout() {
     Raleway_700Bold,
   });
 
-  const hasHydrated = useBlockStore((state) => state.hasHydrated);
+  const blockHydrated = useBlockStore((state) => state.hasHydrated);
   const seedIfEmpty = useBlockStore((state) => state.seedIfEmpty);
+
+  const themeMode = useThemeStore((state) => state.mode);
+  const themeHydrated = useThemeStore((state) => state.hasHydrated);
+  // Keeps NativeWind's `dark:` variant in sync with the user's saved preference.
+  useColorScheme();
+
+  useEffect(() => {
+    if (themeHydrated) {
+      colorScheme.set(themeMode);
+    }
+  }, [themeHydrated, themeMode]);
 
   // Once persisted data has loaded, fill an empty store with sample blocks.
   useEffect(() => {
-    if (hasHydrated) {
+    if (blockHydrated) {
       seedIfEmpty();
     }
-  }, [hasHydrated, seedIfEmpty]);
+  }, [blockHydrated, seedIfEmpty]);
 
-  const ready = (fontsLoaded || !!fontError) && hasHydrated;
+  const ready = (fontsLoaded || !!fontError) && blockHydrated && themeHydrated;
 
   useEffect(() => {
     if (ready) {
@@ -55,6 +70,14 @@ export default function RootLayout() {
       <StatusBar style="auto" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
+        <Stack.Screen
+          name="block-form"
+          options={{ presentation: "modal", headerShown: false }}
+        />
+        <Stack.Screen
+          name="settings"
+          options={{ presentation: "modal", headerShown: false }}
+        />
       </Stack>
     </SafeAreaProvider>
   );
