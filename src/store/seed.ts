@@ -7,42 +7,32 @@ import type { Block, NewBlock } from "@/types/block";
 
 type SeedTemplate = Pick<
   NewBlock,
-  "title" | "icon" | "color" | "startMinute" | "endMinute"
+  "title" | "categoryId" | "startMinute" | "endMinute"
 >;
 
 const SEED_TEMPLATES: readonly SeedTemplate[] = [
   {
     title: "Ritual matutino",
-    icon: "🌅",
-    color: "sand",
+    categoryId: "personal",
     startMinute: 420,
     endMinute: 480,
   },
   {
     title: "Deep work",
-    icon: "🎯",
-    color: "sage",
+    categoryId: "enfoque",
     startMinute: 540,
     endMinute: 660,
   },
-  {
-    title: "Comida",
-    icon: "🍲",
-    color: "terracotta",
-    startMinute: 780,
-    endMinute: 840,
-  },
+  { title: "Comida", categoryId: "personal", startMinute: 780, endMinute: 840 },
   {
     title: "Ejercicio",
-    icon: "🏃",
-    color: "sage",
+    categoryId: "movimiento",
     startMinute: 1080,
     endMinute: 1140,
   },
   {
     title: "Lectura",
-    icon: "📖",
-    color: "sand",
+    categoryId: "bienestar",
     startMinute: 1290,
     endMinute: 1350,
   },
@@ -54,7 +44,6 @@ export function buildSeedBlocks(day: string, now: number): Block[] {
     ...template,
     id: uuidv4(),
     day,
-    completedAt: null,
     createdAt: now,
     updatedAt: now,
   }));
