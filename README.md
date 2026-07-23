@@ -16,11 +16,12 @@ respect for the system "reduce motion" setting. See
 
 ## Status
 
-**Phase 2 — v1.** Create, edit, complete, and delete blocks; a fixed set of
-built-in categories; daily/weekdays/weekly recurrence; local notifications at
-each block's start time; light/dark/system theme (dark by default); week-day
-navigation; a long-press reschedule shortcut; simple stats (streak + time by
-category); JSON backup/restore; an optional donation link.
+**Phase 3 — distribution.** Everything from Phase 2 (CRUD, categories,
+recurrence, notifications, theme, week navigation, reschedule shortcut, stats,
+backup/restore), plus an installable, offline-capable PWA build ready for
+Cloudflare Pages. Native-only APIs (scheduled notifications, the file system)
+are guarded to behave sanely on web instead of throwing — see
+[ADR 9](docs/adr/0009-pwa-on-cloudflare-pages.md).
 
 ## Stack
 
@@ -37,6 +38,8 @@ category); JSON backup/restore; an optional donation link.
 | Icons | @expo/vector-icons | SVG icons for UI controls (emoji stays user-facing content only) |
 | Time picker | @react-native-community/datetimepicker | Native start/end time selection |
 | Backup | expo-file-system, expo-sharing, expo-document-picker | Export/import a JSON backup, no server |
+| Web/PWA | Expo web static export + a hand-written service worker | Installable, works offline after first visit |
+| Hosting | Cloudflare Pages | Large edge network, unlimited free bandwidth |
 | Tests | Jest + React Native Testing Library | Domain and data covered |
 
 ## Architecture
@@ -71,18 +74,44 @@ npm run typecheck
 npm test
 ```
 
-## Roadmap
+## Deploy the web build
 
-- **Phase 3 — Distribution:** PWA on Cloudflare Pages, or EAS Build → TestFlight.
+```bash
+npm run build:web    # expo export --platform web, then fixes up dist/404.html
+npm run deploy:web   # the above, then `wrangler pages deploy dist`
+```
+
+`deploy:web` needs `wrangler login` once (not committed — it's a local
+credential). `wrangler.jsonc` names the Cloudflare Pages project
+`tonalliblock`; change `--project-name` in `package.json`'s `deploy:web`
+script (or `wrangler.jsonc`'s `name`) to deploy under a different one.
+Alternatively, connect the repo in the Cloudflare dashboard
+(Workers & Pages → Create → Connect to Git) with build command
+`npm run build:web` and output directory `dist` for auto-deploy on push —
+no local `wrangler` needed either way.
+
+Regenerate the placeholder app icon (a geometric "T" monogram — real artwork
+is still owed, see [ADR 9](docs/adr/0009-pwa-on-cloudflare-pages.md)) with:
+
+```bash
+npm run generate-icons
+```
+
+## Roadmap
 
 ### Deferred, not forgotten
 
 - **A side-by-side week grid.** Phase 2 shipped day *navigation* (a week strip
   to jump between days) rather than a week-at-a-glance grid — it's what was
   actually needed to verify recurrence, and simpler. A real grid view is a
-  natural Phase 3+ addition once/if it's wanted.
+  natural future addition once/if it's wanted.
 - **Free-form drag to reschedule.** Replaced with a long-press quick-shift
   shortcut — see [ADR 7](docs/adr/0007-reschedule-shortcut-not-drag.md) for why.
+- **A real app icon.** The current one is a generated placeholder monogram —
+  see [ADR 9](docs/adr/0009-pwa-on-cloudflare-pages.md).
+- **Native builds (EAS Build → TestFlight/Play Store).** The PWA path was
+  built first; a native store build is a separate future track and needs an
+  Apple Developer account for TestFlight.
 
 ## License
 

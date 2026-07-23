@@ -60,6 +60,9 @@ Each is recorded as an ADR (Architecture Decision Record) in [`adr/`](adr):
    a long-press quick-shift menu replaces free-form dragging.
 8. [Backup/restore replaces, doesn't merge](adr/0008-backup-restore-replace-not-merge.md)
    — the JSON export/import format and why restore is destructive-with-confirmation.
+9. [PWA on Cloudflare Pages](adr/0009-pwa-on-cloudflare-pages.md) — web platform
+   guards, the generated icon set, the offline service worker, and two Expo
+   Router static-export quirks worked around in `+html.tsx`.
 
 ## Domain model (Phase 2)
 
