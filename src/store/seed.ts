@@ -23,7 +23,12 @@ const SEED_TEMPLATES: readonly SeedTemplate[] = [
     startMinute: 540,
     endMinute: 660,
   },
-  { title: "Comida", categoryId: "personal", startMinute: 780, endMinute: 840 },
+  {
+    title: "ComidaA",
+    categoryId: "personal",
+    startMinute: 780,
+    endMinute: 840,
+  },
   {
     title: "Ejercicio",
     categoryId: "movimiento",
