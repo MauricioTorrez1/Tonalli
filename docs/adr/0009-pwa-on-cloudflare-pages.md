@@ -1,11 +1,11 @@
-# 9. PWA on Cloudflare Pages: platform guards, service worker, generated icons
+# 9. PWA on Cloudflare's Workers static-assets platform: platform guards, service worker, generated icons
 
 - **Status:** Accepted
 - **Date:** 2026-07-23
 
 ## Context
 
-Phase 3 (per the original plan) is distribution: ship the same codebase as an installable, offline-capable PWA, hosted on Cloudflare Pages (chosen over Netlify for edge network size and free bandwidth — see the original planning conversation). Dropping SQLite back in Phase 0 was explicitly meant to make this path simple, since `AsyncStorage` falls back to `localStorage` on web with no extra work. What Phase 0 didn't anticipate was every *other* native module added since — notifications, file system, sharing — each needed to be checked against its actual web behavior rather than assumed.
+Phase 3 (per the original plan) is distribution: ship the same codebase as an installable, offline-capable PWA, hosted on Cloudflare (chosen over Netlify for edge network size and free bandwidth — see the original planning conversation, which specified "Cloudflare Pages"). Dropping SQLite back in Phase 0 was explicitly meant to make this path simple, since `AsyncStorage` falls back to `localStorage` on web with no extra work. What Phase 0 didn't anticipate was every *other* native module added since — notifications, file system, sharing — each needed to be checked against its actual web behavior rather than assumed.
 
 ## Decision
 
@@ -27,11 +27,28 @@ Metro's JS/CSS output filenames are content-hashed per build, so a service worke
 
 ### Two Expo Router static-export quirks, worked around in `+html.tsx`
 
-- **Cloudflare Pages needs a literal `404.html`**, but Expo Router's web export names its not-found page `+not-found.html`. `scripts/postexport-web.js` copies one to the other after every export (`npm run build:web` runs both steps). Without it, Pages assumes the whole site is a single-page app and silently routes every unmatched path to `/` instead of showing a real 404.
+- **The host needs a literal `404.html`**, but Expo Router's web export names its not-found page `+not-found.html`. `scripts/postexport-web.js` copies one to the other after every export (`npm run build:web` runs both steps). Without it, the deploy assumes the whole site is a single-page app and silently routes every unmatched path to `/` instead of showing a real 404.
 - **Every route ships an empty `<title>`.** Expo Router's static export unconditionally injects its own empty `react-helmet-async` title slot at the front of `<head>`, regardless of whether the code uses `expo-router/head`'s `<Head>` — which only fills that slot for a screen react-navigation considers "focused", never true during the static prerender pass. Confirmed by inspecting the generated HTML, not assumed. Fixed with an inline script (`document.title = "TonalliBlock"`, which the DOM spec defines as retargeting the *first* `<title>` in the document — the empty one), run once synchronously in `<head>` and once more on `window.load` as a guard against Helmet's client-side hydration re-emptying it.
+
+### Cloudflare Pages, mid-migration to Workers — discovered during deploy, not planned for
+
+The plan (from the original Phase 0 conversation) said "Cloudflare Pages". By the time this shipped, `wrangler pages deploy` had started auto-delegating to "the latest version of Cloudflare Pages, now part of Cloudflare Workers" and failing outright, because `wrangler.jsonc` had Pages' `pages_build_output_dir` key instead of the new model's `assets` block. Confirmed against current Cloudflare docs (fetched live, not from training data, since this is exactly the kind of recently-changed platform detail worth double-checking) rather than fighting the delegation: `wrangler.jsonc` uses
+
+```jsonc
+{
+  "name": "tonalliblock",
+  "compatibility_date": "2026-07-23",
+  "assets": { "directory": "./dist", "not_found_handling": "404-page" }
+}
+```
+
+`main` (a Worker script entrypoint) is optional and correctly omitted — this is a pure static site, no server code. Deploy command is `wrangler deploy`, not `wrangler pages deploy`. `public/_headers`' cache rules are still honored under this model (verified post-deploy: the JS bundle's response carried `Cache-Control: public, max-age=31536000, immutable` as configured).
+
+Live at **https://tonalliblock.maurixio-torrez.workers.dev**.
 
 ## Consequences
 
-- `wrangler.jsonc` + `npm run deploy:web` (`expo export --platform web` → copy 404.html → `wrangler pages deploy dist`) is the whole deploy pipeline for a project with no backend and no Pages Functions.
-- `public/` is the convention for anything that needs a stable, unhashed URL — manifest, service worker, PWA icons, `_headers`, `_redirects` — confirmed by testing that Expo's web export copies its contents to the output root verbatim.
+- `wrangler.jsonc` + `npm run deploy:web` (`expo export --platform web` → copy 404.html → `wrangler deploy`) is the whole deploy pipeline for a project with no backend and no server-side routes.
+- `public/` is the convention for anything that needs a stable, unhashed URL — manifest, service worker, PWA icons, `_headers` — confirmed by testing that Expo's web export copies its contents to the output root verbatim.
+- Post-deploy verification used `curl` against the live URL (status codes, headers, clean-URL routing, 404 behavior, JS bundle integrity/size) rather than a browser-rendering fetch tool, since this app's static HTML is a shell with no pre-rendered visible content — a non-JS-executing fetch reporting "blank page" here is expected, not a deploy failure signal.
 - **Known gap:** a real design pass on the app icon/splash art is still owed. The generated monogram is legible and on-brand color-wise, but is not a substitute for actual icon design.

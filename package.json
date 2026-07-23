@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "expo export --platform web && node scripts/postexport-web.js",
-    "deploy:web": "npm run build:web && wrangler pages deploy dist --project-name=tonalliblock",
+    "deploy:web": "npm run build:web && wrangler deploy",
     "generate-icons": "node scripts/generate-icons.js",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",

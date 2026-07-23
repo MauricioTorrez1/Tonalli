@@ -18,9 +18,10 @@ respect for the system "reduce motion" setting. See
 
 **Phase 3 — distribution.** Everything from Phase 2 (CRUD, categories,
 recurrence, notifications, theme, week navigation, reschedule shortcut, stats,
-backup/restore), plus an installable, offline-capable PWA build ready for
-Cloudflare Pages. Native-only APIs (scheduled notifications, the file system)
-are guarded to behave sanely on web instead of throwing — see
+backup/restore), plus an installable, offline-capable PWA, live at
+**https://tonalliblock.maurixio-torrez.workers.dev**. Native-only APIs
+(scheduled notifications, the file system) are guarded to behave sanely on
+web instead of throwing — see
 [ADR 9](docs/adr/0009-pwa-on-cloudflare-pages.md).
 
 ## Stack
@@ -76,19 +77,23 @@ npm test
 
 ## Deploy the web build
 
+Live at **https://tonalliblock.maurixio-torrez.workers.dev**.
+
 ```bash
 npm run build:web    # expo export --platform web, then fixes up dist/404.html
-npm run deploy:web   # the above, then `wrangler pages deploy dist`
+npm run deploy:web   # the above, then `wrangler deploy`
 ```
 
-`deploy:web` needs `wrangler login` once (not committed — it's a local
-credential). `wrangler.jsonc` names the Cloudflare Pages project
-`tonalliblock`; change `--project-name` in `package.json`'s `deploy:web`
-script (or `wrangler.jsonc`'s `name`) to deploy under a different one.
-Alternatively, connect the repo in the Cloudflare dashboard
-(Workers & Pages → Create → Connect to Git) with build command
-`npm run build:web` and output directory `dist` for auto-deploy on push —
-no local `wrangler` needed either way.
+Deployed on Cloudflare's Workers static-assets platform (the modern
+successor to Cloudflare Pages — `wrangler pages deploy` now auto-delegates
+there and fails without an `assets` block, so `wrangler.jsonc` uses
+`assets.directory` + `not_found_handling: "404-page"`, not the older
+`pages_build_output_dir`). `deploy:web` needs `wrangler login` once (not
+committed — it's a local credential). Change `name` in `wrangler.jsonc` to
+deploy under a different project. Alternatively, connect the repo in the
+Cloudflare dashboard (Workers & Pages → Create → Connect to Git) with build
+command `npm run build:web` and output directory `dist` for auto-deploy on
+push — no local `wrangler` needed either way.
 
 Regenerate the placeholder app icon (a geometric "T" monogram — real artwork
 is still owed, see [ADR 9](docs/adr/0009-pwa-on-cloudflare-pages.md)) with:
