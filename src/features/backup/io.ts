@@ -2,13 +2,24 @@
  * File system + share-sheet + document-picker glue for backup/restore. Thin
  * and untested by design — see the module doc in utils/backup.ts.
  *
- * Uses expo-file-system's newer `File`/`Directory` class API (the legacy
- * `writeAsStringAsync`/`cacheDirectory` string API from older SDKs no longer
- * exists in the installed version).
+ * Split by platform because the underlying APIs genuinely aren't the same
+ * capability with different plumbing:
+ * - Native: expo-file-system's newer `File`/`Directory` class API (the
+ *   legacy `writeAsStringAsync`/`cacheDirectory` string API from older SDKs
+ *   doesn't exist in the installed version) + expo-sharing's OS share sheet.
+ * - Web: Metro resolves `expo-file-system` to its web stub there — the
+ *   `File`/`Directory` constructors just `console.warn` and implement
+ *   nothing (confirmed by reading `expo-file-system/src/ExpoFileSystem.web.ts`),
+ *   so those methods must never actually be called on web. The standard
+ *   browser pattern — a `Blob` + a temporary `<a download>` — replaces it for
+ *   export. For restore, expo-document-picker's web implementation already
+ *   hands back the real browser `File` object as `asset.file`, which has its
+ *   own native `.text()`.
  */
 import * as DocumentPicker from "expo-document-picker";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
+import { Platform } from "react-native";
 
 import type { Backup } from "@/types/backup";
 import { parseBackup } from "./utils/backup";
@@ -16,18 +27,42 @@ import { parseBackup } from "./utils/backup";
 const BACKUP_FILE_NAME = "tonalliblock-backup.json";
 
 /**
- * Write the backup to a cache file and open the OS share sheet on it.
- * Returns whether the share sheet actually opened — the caller should tell
- * the user if it didn't, since the export would otherwise appear to do
- * nothing (the file is written either way, just not surfaced anywhere).
+ * Write the backup to a file and hand it to the user — the OS share sheet on
+ * native, a browser download on web. Returns whether that actually happened;
+ * the caller should tell the user if it didn't, since the alternative is the
+ * export silently appearing to do nothing.
  */
 export async function exportBackup(backup: Backup): Promise<boolean> {
+  const json = JSON.stringify(backup, null, 2);
+  return Platform.OS === "web"
+    ? exportBackupWeb(json)
+    : exportBackupNative(json);
+}
+
+function exportBackupWeb(json: string): boolean {
+  if (typeof document === "undefined") {
+    return false;
+  }
+  const url = URL.createObjectURL(
+    new Blob([json], { type: "application/json" }),
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = BACKUP_FILE_NAME;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+async function exportBackupNative(json: string): Promise<boolean> {
   const file = new File(Paths.cache, BACKUP_FILE_NAME);
   if (file.exists) {
     file.delete();
   }
   file.create();
-  file.write(JSON.stringify(backup, null, 2));
+  file.write(json);
 
   const available = await Sharing.isAvailableAsync();
   if (available) {
@@ -55,7 +90,10 @@ export async function pickBackupFile(): Promise<Backup | null> {
     return null;
   }
   try {
-    const content = await new File(asset.uri).text();
+    const content =
+      Platform.OS === "web" && asset.file
+        ? await asset.file.text()
+        : await new File(asset.uri).text();
     const parsed: unknown = JSON.parse(content);
     return parseBackup(parsed);
   } catch {

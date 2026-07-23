@@ -30,6 +30,18 @@ export async function ensureNotificationChannel(): Promise<void> {
   }
 }
 
+/**
+ * True on every platform where a *scheduled* (future-dated) local
+ * notification actually works. `expo-notifications`' scheduler has no web
+ * implementation — `NotificationScheduler.ts`, the module Metro resolves for
+ * web, only stubs `addListener`/`removeListeners`; calling
+ * `scheduleNotificationAsync` there throws `UnavailabilityError` (confirmed
+ * by reading the package source, not assumed). Permission APIs *do* work on
+ * web (they talk to the browser's own `Notification` API), which is exactly
+ * why scheduling can't be guarded by a permission check alone.
+ */
+export const supportsScheduledNotifications = Platform.OS !== "web";
+
 /** Read-only permission check — does not prompt the user. */
 export async function checkPermission(): Promise<boolean> {
   const current = await Notifications.getPermissionsAsync();
@@ -70,12 +82,18 @@ function toExpoTrigger(
   }
 }
 
-/** Schedule every notification a block needs. Returns their ids for later cancellation. */
+/**
+ * Schedule every notification a block needs. Returns their ids for later
+ * cancellation. No-ops on web — see `supportsScheduledNotifications`.
+ */
 export async function scheduleForBlock(
   block: Block,
   recurrence: Recurrence | undefined,
   now: Date = new Date(),
 ): Promise<string[]> {
+  if (!supportsScheduledNotifications) {
+    return [];
+  }
   const triggers = buildTriggersForBlock(block, recurrence, now);
   const ids = await Promise.all(
     triggers.map((trigger) =>
@@ -91,9 +109,13 @@ export async function scheduleForBlock(
   return ids;
 }
 
+/** No-ops on web — see `supportsScheduledNotifications`. */
 export async function cancelNotifications(
   ids: readonly string[],
 ): Promise<void> {
+  if (!supportsScheduledNotifications) {
+    return;
+  }
   await Promise.all(
     ids.map((id) => Notifications.cancelScheduledNotificationAsync(id)),
   );

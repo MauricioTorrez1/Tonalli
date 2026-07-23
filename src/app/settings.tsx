@@ -22,6 +22,7 @@ import {
   checkPermission,
   requestPermission,
   scheduleForBlock,
+  supportsScheduledNotifications,
 } from "@/features/notifications/schedule";
 import { donationUrl } from "@/lib/config";
 import { useBlockStore } from "@/store/block-store";
@@ -99,7 +100,9 @@ export default function SettingsScreen() {
   const setNotificationIds = useBlockStore((state) => state.setNotificationIds);
 
   useEffect(() => {
-    checkPermission().then(setNotificationsGranted);
+    if (supportsScheduledNotifications) {
+      checkPermission().then(setNotificationsGranted);
+    }
   }, []);
 
   async function handleEnableNotifications() {
@@ -215,7 +218,12 @@ export default function SettingsScreen() {
         <Text className="mb-1 mt-8 font-raleway-semibold text-sm text-ink-soft dark:text-ink-invsoft">
           Notificaciones
         </Text>
-        {notificationsGranted ? (
+        {!supportsScheduledNotifications ? (
+          <Text className="py-3 font-raleway text-sm text-ink-muted dark:text-ink-invmuted">
+            No disponibles en la versión web — instala la app en tu teléfono
+            para recibir avisos.
+          </Text>
+        ) : notificationsGranted ? (
           <Text className="py-3 font-raleway text-sm text-ink dark:text-ink-inverse">
             Activadas. Recibirás un aviso al empezar cada bloque.
           </Text>
