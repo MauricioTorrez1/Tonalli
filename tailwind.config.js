@@ -4,6 +4,11 @@ const { colors } = require("./src/theme/palette");
 module.exports = {
   content: ["./src/**/*.{ts,tsx}"],
   presets: [require("nativewind/preset")],
+  // Resolve dark mode via a root class, not the system `@media` query, so the
+  // app can honor the user's saved theme (`system`/`light`/`dark`). Without
+  // this, `colorScheme.set()` throws on web ("dark mode is type 'media'") and
+  // blanks the render; native is unaffected either way.
+  darkMode: "class",
   theme: {
     extend: {
       colors,
