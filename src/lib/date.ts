@@ -113,3 +113,16 @@ export function dayHeading(day: DayString, today: DayString): string {
   const dayOfMonth = Number(day.slice(8, 10));
   return `${weekdayName} ${dayOfMonth}`;
 }
+
+/** A minute count as "Xh Ym", e.g. 140 -> "2 h 20 min", 45 -> "45 min". */
+export function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) {
+    return `${mins} min`;
+  }
+  if (mins === 0) {
+    return `${hours} h`;
+  }
+  return `${hours} h ${mins} min`;
+}

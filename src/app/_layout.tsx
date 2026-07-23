@@ -78,6 +78,10 @@ export default function RootLayout() {
           name="settings"
           options={{ presentation: "modal", headerShown: false }}
         />
+        <Stack.Screen
+          name="stats"
+          options={{ presentation: "modal", headerShown: false }}
+        />
       </Stack>
     </SafeAreaProvider>
   );

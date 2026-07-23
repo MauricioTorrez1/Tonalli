@@ -1,6 +1,7 @@
 import {
   addDays,
   dayHeading,
+  formatDuration,
   isoWeekday,
   isWeekday,
   startOfWeek,
@@ -68,5 +69,23 @@ describe("dayHeading", () => {
 
   it("returns the weekday name and day-of-month otherwise", () => {
     expect(dayHeading("2026-07-22", "2026-07-20")).toBe("Miércoles 22");
+  });
+});
+
+describe("formatDuration", () => {
+  it("formats a duration under an hour as minutes only", () => {
+    expect(formatDuration(45)).toBe("45 min");
+  });
+
+  it("formats an exact number of hours without minutes", () => {
+    expect(formatDuration(120)).toBe("2 h");
+  });
+
+  it("formats hours and minutes together", () => {
+    expect(formatDuration(140)).toBe("2 h 20 min");
+  });
+
+  it("formats zero minutes", () => {
+    expect(formatDuration(0)).toBe("0 min");
   });
 });
