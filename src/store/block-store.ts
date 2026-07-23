@@ -56,6 +56,18 @@ interface BlockState extends PersistedShape {
   deleteRecurrence: (id: string) => void;
 
   setNotificationIds: (blockId: string, ids: string[]) => void;
+
+  /**
+   * Replace all blocks, recurrences, and completions with a restored backup.
+   * Clears notificationIdsByBlock — the old ids reference OS-level scheduled
+   * notifications on whatever device made the backup, meaningless here; the
+   * restore flow in settings.tsx re-schedules fresh ones afterward.
+   */
+  restoreBackup: (backup: {
+    blocks: Block[];
+    recurrences: Recurrence[];
+    completions: Completion[];
+  }) => void;
 }
 
 function emptyPersistedState(): PersistedShape {
@@ -225,6 +237,15 @@ export const useBlockStore = create<BlockState>()(
             [blockId]: ids,
           },
         }));
+      },
+
+      restoreBackup: (backup) => {
+        set({
+          blocks: backup.blocks,
+          recurrences: backup.recurrences,
+          completions: backup.completions,
+          notificationIdsByBlock: {},
+        });
       },
     }),
     {
