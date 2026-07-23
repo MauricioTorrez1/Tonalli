@@ -16,9 +16,11 @@ respect for the system "reduce motion" setting. See
 
 ## Status
 
-**Phase 1 — MVP.** Create, edit, complete, and delete blocks; a fixed set of
+**Phase 2 — v1.** Create, edit, complete, and delete blocks; a fixed set of
 built-in categories; daily/weekdays/weekly recurrence; local notifications at
-each block's start time; light/dark/system theme (dark by default).
+each block's start time; light/dark/system theme (dark by default); week-day
+navigation; a long-press reschedule shortcut; simple stats (streak + time by
+category); JSON backup/restore; an optional donation link.
 
 ## Stack
 
@@ -34,6 +36,7 @@ each block's start time; light/dark/system theme (dark by default).
 | Notifications | expo-notifications | Local reminders at each block's start time |
 | Icons | @expo/vector-icons | SVG icons for UI controls (emoji stays user-facing content only) |
 | Time picker | @react-native-community/datetimepicker | Native start/end time selection |
+| Backup | expo-file-system, expo-sharing, expo-document-picker | Export/import a JSON backup, no server |
 | Tests | Jest + React Native Testing Library | Domain and data covered |
 
 ## Architecture
@@ -56,7 +59,8 @@ Requires Node 20+ and the Expo Go app (SDK 54) on your device.
 
 ```bash
 npm install
-npm start        # scan the QR code with Expo Go
+cp .env.example .env   # optional: set EXPO_PUBLIC_DONATION_URL to show the support link
+npm start               # scan the QR code with Expo Go
 ```
 
 Quality gates:
@@ -69,9 +73,16 @@ npm test
 
 ## Roadmap
 
-- **Phase 2 — v1:** week view, drag to reschedule, stats, JSON backup/restore,
-  donation button.
 - **Phase 3 — Distribution:** PWA on Cloudflare Pages, or EAS Build → TestFlight.
+
+### Deferred, not forgotten
+
+- **A side-by-side week grid.** Phase 2 shipped day *navigation* (a week strip
+  to jump between days) rather than a week-at-a-glance grid — it's what was
+  actually needed to verify recurrence, and simpler. A real grid view is a
+  natural Phase 3+ addition once/if it's wanted.
+- **Free-form drag to reschedule.** Replaced with a long-press quick-shift
+  shortcut — see [ADR 7](docs/adr/0007-reschedule-shortcut-not-drag.md) for why.
 
 ## License
 
