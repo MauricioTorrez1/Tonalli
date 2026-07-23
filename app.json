@@ -4,6 +4,7 @@
     "slug": "tonalliblock",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
     "scheme": "tonalliblock",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,20 +15,23 @@
     "android": {
       "package": "mx.tonalliblock.app",
       "adaptiveIcon": {
-        "backgroundColor": "#FAF7F2"
+        "backgroundColor": "#FAF7F2",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "static"
+      "output": "static",
+      "favicon": "./public/favicon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
+          "image": "./assets/images/splash-icon.png",
           "backgroundColor": "#FAF7F2",
-          "imageWidth": 120,
+          "imageWidth": 160,
           "dark": {
             "backgroundColor": "#121110"
           }

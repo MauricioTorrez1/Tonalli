@@ -8,6 +8,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "build:web": "expo export --platform web && node scripts/postexport-web.js",
+    "deploy:web": "npm run build:web && wrangler pages deploy dist --project-name=tonalliblock",
+    "generate-icons": "node scripts/generate-icons.js",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",
@@ -57,7 +60,8 @@
     "prettier": "^3.4.2",
     "react-test-renderer": "19.1.0",
     "tailwindcss": "^3.4.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "wrangler": "^4.113.0"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
