@@ -6,7 +6,7 @@
 import type { DayString } from "@/lib/date";
 import type { Category } from "@/types/category";
 import type { ColorToken } from "@/theme/colors";
-import type { Block } from "@/types/block";
+import { MINUTES_IN_DAY, type Block } from "@/types/block";
 
 /**
  * Lifecycle state of a block relative to the current moment. A literal union
@@ -79,6 +79,24 @@ export function resolveBlockIcon(
   category: Category | undefined,
 ): string | undefined {
   return block.icon ?? category?.icon;
+}
+
+/**
+ * Shift a [startMinute, endMinute) range by `deltaMinutes`, preserving its
+ * duration and clamping to the day (0–1439) — shifting a late-evening block
+ * later stops it at 23:59 rather than wrapping into a new day.
+ */
+export function shiftBlockTime(
+  startMinute: number,
+  endMinute: number,
+  deltaMinutes: number,
+): { startMinute: number; endMinute: number } {
+  const duration = endMinute - startMinute;
+  // endMinute must stay <= MINUTES_IN_DAY - 1 (the schema's max), so the
+  // latest valid start is one less than a naive "MINUTES_IN_DAY - duration".
+  const maxStart = MINUTES_IN_DAY - 1 - duration;
+  const newStart = Math.max(0, Math.min(maxStart, startMinute + deltaMinutes));
+  return { startMinute: newStart, endMinute: newStart + duration };
 }
 
 /**

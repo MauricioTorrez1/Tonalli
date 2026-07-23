@@ -6,7 +6,7 @@
  */
 import { useRouter } from "expo-router";
 import { Fragment } from "react";
-import { ScrollView, Text } from "react-native";
+import { Alert, ScrollView, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { findCategory } from "@/features/categories/default-categories";
@@ -15,6 +15,7 @@ import { useBlockStore } from "@/store/block-store";
 import type { Block } from "@/types/block";
 import { isCompleted } from "../utils/completions";
 import { useReducedMotion } from "../hooks/useReducedMotion";
+import { useRescheduleBlock } from "../hooks/useRescheduleBlock";
 import {
   getBlockStatus,
   nowIndicatorIndex,
@@ -38,10 +39,27 @@ export function DayTimeline({ day, blocks, heading }: DayTimelineProps) {
   const router = useRouter();
   const completions = useBlockStore((state) => state.completions);
   const toggleComplete = useBlockStore((state) => state.toggleComplete);
+  const rescheduleBlock = useRescheduleBlock();
   const today = todayString();
   const isToday = day === today;
   const now = nowMinute();
   const indicatorAt = isToday ? nowIndicatorIndex(blocks, now) : -1;
+
+  function handleLongPress(block: Block) {
+    const seriesNote = block.recurrenceId
+      ? " Se aplicará a todas las repeticiones."
+      : "";
+    Alert.alert(block.title, `Reprogramar este bloque.${seriesNote}`, [
+      { text: "Adelantar 15 min", onPress: () => rescheduleBlock(block, -15) },
+      { text: "Atrasar 15 min", onPress: () => rescheduleBlock(block, 15) },
+      {
+        text: "Editar horario completo",
+        onPress: () =>
+          router.push({ pathname: "/block-form", params: { id: block.id } }),
+      },
+      { text: "Cancelar", style: "cancel" },
+    ]);
+  }
 
   return (
     <ScrollView
@@ -85,6 +103,7 @@ export function DayTimeline({ day, blocks, heading }: DayTimelineProps) {
                     params: { id: block.id },
                   })
                 }
+                onLongPress={() => handleLongPress(block)}
                 onToggleComplete={() => toggleComplete(block.id, block.day)}
               />
             </Fragment>

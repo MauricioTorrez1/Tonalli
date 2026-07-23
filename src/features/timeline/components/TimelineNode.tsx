@@ -30,6 +30,7 @@ interface TimelineNodeProps {
   /** False for the last node, so the spine does not run off the bottom. */
   hasNext: boolean;
   onPress: () => void;
+  onLongPress: () => void;
   onToggleComplete: () => void;
 }
 
@@ -49,6 +50,7 @@ function TimelineNodeComponent({
   reducedMotion,
   hasNext,
   onPress,
+  onLongPress,
   onToggleComplete,
 }: TimelineNodeProps) {
   const style = CATEGORY_STYLES[color];
@@ -81,9 +83,10 @@ function TimelineNodeComponent({
       {/* Right: the block card. */}
       <Pressable
         onPress={onPress}
+        onLongPress={onLongPress}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
-        accessibilityHint="Toca para editar el bloque"
+        accessibilityHint="Toca para editar el bloque, mantén presionado para reprogramar"
         className={`mb-4 flex-1 flex-row items-center rounded-card border p-4 ${
           isCurrent
             ? `${style.solidBg} border-transparent`

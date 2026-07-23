@@ -6,6 +6,7 @@ import {
   nowIndicatorIndex,
   resolveBlockColor,
   resolveBlockIcon,
+  shiftBlockTime,
   sortByStart,
 } from "@/features/timeline/utils/timeline-layout";
 
@@ -172,5 +173,35 @@ describe("hasOverlap", () => {
       makeBlock({ startMinute: 1200, endMinute: 1260 }),
     ];
     expect(hasOverlap(blocks)).toBe(false);
+  });
+});
+
+describe("shiftBlockTime", () => {
+  it("shifts both ends by the same delta, preserving duration", () => {
+    expect(shiftBlockTime(540, 600, 15)).toEqual({
+      startMinute: 555,
+      endMinute: 615,
+    });
+  });
+
+  it("shifts earlier with a negative delta", () => {
+    expect(shiftBlockTime(540, 600, -15)).toEqual({
+      startMinute: 525,
+      endMinute: 585,
+    });
+  });
+
+  it("clamps at the start of the day instead of going negative", () => {
+    expect(shiftBlockTime(10, 70, -30)).toEqual({
+      startMinute: 0,
+      endMinute: 60,
+    });
+  });
+
+  it("clamps at the end of the day instead of overflowing into a new day", () => {
+    expect(shiftBlockTime(1400, 1435, 30)).toEqual({
+      startMinute: 1404,
+      endMinute: 1439,
+    });
   });
 });
