@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
 
+# Cancel in-progress runs for the same ref when a newer commit is pushed.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -11,7 +16,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Match the Node major used by the Cloudflare build (production).
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run lint
