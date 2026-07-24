@@ -10,6 +10,14 @@ jest.mock("@react-native-async-storage/async-storage", () =>
 // lightweight hand-written mock renders animated components as plain views and
 // stubs the entrance-animation builders as no-op chainables — all component
 // tests need, since entrance animations are visual, not behavioral.
+// @expo/vector-icons pulls in expo-font -> expo-asset, a native font-loading
+// chain that does not resolve under a clean Node install (and triggers async
+// state updates that warn about act()). Icons are purely visual, so replace
+// every icon set with a component that renders nothing. The factory returns no
+// JSX/createElement on purpose: nativewind's babel transform would otherwise
+// inject an out-of-scope helper, which jest.mock hoisting forbids.
+jest.mock("@expo/vector-icons", () => new Proxy({}, { get: () => () => null }));
+
 jest.mock("react-native-reanimated", () => {
   const { View } = require("react-native");
 
