@@ -9,17 +9,49 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Each check runs as its own job so they execute in parallel on separate
+# runners and render as distinct nodes in the Actions DAG graph. The trade-off
+# is that every job repeats checkout + install; for this project the parallelism
+# wins on wall-clock time and gives clearer, independently-retryable failures.
 jobs:
-  check:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          # Match the Node major used by the Cloudflare build (production).
           node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npm run typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npm test
+
+  # Aggregation gate: fans in from every check so a single required status
+  # reflects the whole suite. Deployment is owned by Cloudflare (push-triggered),
+  # so this job asserts quality only and does not deploy.
+  ci-passed:
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - run: echo "All checks passed."
