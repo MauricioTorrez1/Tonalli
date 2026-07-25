@@ -63,8 +63,11 @@ export function ListRow({
   const content = (
     <View className="flex-row items-center px-4 py-3">
       {icon ? (
+        // rounded-lg, not the 16px rounded-button token: on a 32px tile a 16px
+        // radius is exactly half the height, which renders a circle. The
+        // reference's tiles are squares with softened corners.
         <View
-          className={`mr-3 h-8 w-8 items-center justify-center rounded-button ${CATEGORY_STYLES[iconTint].solidBg}`}
+          className={`mr-3 h-8 w-8 items-center justify-center rounded-lg ${CATEGORY_STYLES[iconTint].solidBg}`}
         >
           <Feather name={icon} size={16} color="white" />
         </View>
