@@ -3,6 +3,12 @@
 - **Status:** Accepted
 - **Date:** 2026-07-22
 
+> **Clarification (2026-07-24):** the timeline node's rail pill carries its
+> category color at all times, using the opaque *soft* shade. The *solid*
+> shade stays reserved for the current block, so §3 below holds: the pill is a
+> category landmark, the solid fill is still what marks "now". See
+> [ADR 10](0010-animation-allowlist.md).
+
 ## Context
 
 Phase 0 shipped a single warm, muted palette (sand / terracotta / sage) and didn't actually use a block's `color` field for anything visible — every node's dot color came from its status, not its category. The user asked for a visual direction closer to Structured — dark background, more color — while keeping the ADHD-oriented focus-first goal from [ADR 4](0004-focus-first-design-for-attention.md) intact. Those two asks are in tension: more color risks more visual noise, which is exactly what focus-first design tries to avoid.

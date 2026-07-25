@@ -1,7 +1,13 @@
 # 4. Focus-first design for attention (ADHD)
 
-- **Status:** Accepted
+- **Status:** Accepted, partially superseded by [ADR 10](0010-animation-allowlist.md)
 - **Date:** 2026-07-22
+
+> **Amendment (2026-07-24):** the "≤ 2 animations per view" limit and the
+> "nothing over 500 ms" rule below are replaced by the allowlist and the two
+> structural limits in [ADR 10](0010-animation-allowlist.md). The principle
+> they were trying to express — motion with purpose, never decoration — is
+> unchanged.
 
 ## Context
 
