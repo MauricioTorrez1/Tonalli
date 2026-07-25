@@ -100,6 +100,29 @@ export function shiftBlockTime(
 }
 
 /**
+ * Set a block's end from its start plus a duration, keeping it inside the day.
+ *
+ * Backs the duration chips in the time sheet ("30", "1 h"). When the requested
+ * duration would run past midnight the block is *not* moved earlier — its
+ * start is what the user chose — so the end is clamped to the last valid
+ * minute instead, matching `shiftBlockTime`'s `MINUTES_IN_DAY - 1` ceiling.
+ *
+ * @param startMinute - Minute of day the block begins.
+ * @param durationMinutes - Requested length in minutes.
+ * @returns The unchanged start and the resulting end minute.
+ */
+export function applyDuration(
+  startMinute: number,
+  durationMinutes: number,
+): { startMinute: number; endMinute: number } {
+  const endMinute = Math.min(
+    MINUTES_IN_DAY - 1,
+    startMinute + Math.max(1, durationMinutes),
+  );
+  return { startMinute, endMinute };
+}
+
+/**
  * Index at which the "now" indicator should be inserted into a start-sorted
  * list: the number of blocks that have already started (start <= now). With
  * blocks at 09:00 / 11:00 / 13:00 and now = 10:00 this returns 1, placing the

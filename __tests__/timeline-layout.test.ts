@@ -1,6 +1,7 @@
 import type { Category } from "@/types/category";
 import type { Block } from "@/types/block";
 import {
+  applyDuration,
   getBlockStatus,
   hasOverlap,
   nowIndicatorIndex,
@@ -202,6 +203,35 @@ describe("shiftBlockTime", () => {
     expect(shiftBlockTime(1400, 1435, 30)).toEqual({
       startMinute: 1404,
       endMinute: 1439,
+    });
+  });
+});
+
+describe("applyDuration", () => {
+  it("sets the end from the start plus the requested duration", () => {
+    expect(applyDuration(540, 30)).toEqual({
+      startMinute: 540,
+      endMinute: 570,
+    });
+  });
+
+  it("keeps the start where the user put it and clamps only the end", () => {
+    // 23:50 plus an hour would run past midnight. Moving the block earlier
+    // would silently override a time the user explicitly chose.
+    expect(applyDuration(1430, 60)).toEqual({
+      startMinute: 1430,
+      endMinute: 1439,
+    });
+  });
+
+  it("never produces a zero-length block", () => {
+    expect(applyDuration(540, 0)).toEqual({
+      startMinute: 540,
+      endMinute: 541,
+    });
+    expect(applyDuration(540, -30)).toEqual({
+      startMinute: 540,
+      endMinute: 541,
     });
   });
 });

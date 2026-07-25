@@ -17,5 +17,9 @@ export function useThemeColors() {
     isDark,
     icon: isDark ? palette.ink.invsoft : palette.ink.soft,
     iconStrong: isDark ? palette.ink.inverse : palette.ink.DEFAULT,
+    /** Raised surface — bottom sheets, which style via props, not className. */
+    surface: isDark ? palette.nightSurface : palette.cream,
+    /** The sheet's drag grabber. */
+    grabber: isDark ? palette.ink.invsoft : palette.ink.soft,
   };
 }
