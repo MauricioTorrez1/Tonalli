@@ -13,8 +13,8 @@ import { findCategory } from "@/features/categories/default-categories";
 import { nowMinute, todayString, type DayString } from "@/lib/date";
 import { useBlockStore } from "@/store/block-store";
 import type { Block } from "@/types/block";
+import { useReducedMotionValue } from "@/ui/motion";
 import { isCompleted } from "../utils/completions";
-import { useReducedMotion } from "../hooks/useReducedMotion";
 import { useRescheduleBlock } from "../hooks/useRescheduleBlock";
 import {
   getBlockStatus,
@@ -35,7 +35,7 @@ interface DayTimelineProps {
 
 export function DayTimeline({ day, blocks, heading }: DayTimelineProps) {
   const insets = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionValue();
   const router = useRouter();
   const completions = useBlockStore((state) => state.completions);
   const toggleComplete = useBlockStore((state) => state.toggleComplete);

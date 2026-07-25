@@ -9,6 +9,7 @@ import { WeekStrip } from "@/features/timeline/components/WeekStrip";
 import { useDayBlocks } from "@/features/timeline/hooks/useDayBlocks";
 import { dayHeading, todayString, type DayString } from "@/lib/date";
 import { useThemeColors } from "@/theme/useThemeColors";
+import { PressableScale } from "@/ui/PressableScale";
 
 export default function DayScreen() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export default function DayScreen() {
       />
 
       {/* The single clear call to action: add a block. */}
-      <Pressable
+      <PressableScale
         onPress={() =>
           router.push({ pathname: "/block-form", params: { day: selectedDay } })
         }
@@ -73,7 +74,7 @@ export default function DayScreen() {
         style={{ bottom: insets.bottom + 24 }}
       >
         <Feather name="plus" size={26} color="white" />
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }

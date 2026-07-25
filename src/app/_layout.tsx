@@ -18,6 +18,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureNotificationChannel } from "@/features/notifications/schedule";
 import { useBlockStore } from "@/store/block-store";
 import { useThemeStore } from "@/store/theme-store";
+import { ReducedMotionProvider } from "@/ui/motion";
 
 SplashScreen.preventAutoHideAsync();
 ensureNotificationChannel();
@@ -67,22 +68,24 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen
-          name="block-form"
-          options={{ presentation: "modal", headerShown: false }}
-        />
-        <Stack.Screen
-          name="settings"
-          options={{ presentation: "modal", headerShown: false }}
-        />
-        <Stack.Screen
-          name="stats"
-          options={{ presentation: "modal", headerShown: false }}
-        />
-      </Stack>
+      <ReducedMotionProvider>
+        <StatusBar style="auto" />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen
+            name="block-form"
+            options={{ presentation: "modal", headerShown: false }}
+          />
+          <Stack.Screen
+            name="settings"
+            options={{ presentation: "modal", headerShown: false }}
+          />
+          <Stack.Screen
+            name="stats"
+            options={{ presentation: "modal", headerShown: false }}
+          />
+        </Stack>
+      </ReducedMotionProvider>
     </SafeAreaProvider>
   );
 }
