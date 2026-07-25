@@ -43,3 +43,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Local design references — screenshots of other apps, kept out of a public
+# portfolio repo for copyright reasons and because they are not this project's
+# work.
+Images/
