@@ -6,9 +6,10 @@
  * reused for a category. See docs/adr/0006-vivid-category-colors-on-warm-black.md.
  */
 import { Text, View } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
+import { FadeIn } from "react-native-reanimated";
 
 import { formatMinute } from "@/lib/date";
+import { AnimatedView } from "@/ui/AnimatedView";
 
 interface NowIndicatorProps {
   minute: number;
@@ -17,7 +18,7 @@ interface NowIndicatorProps {
 
 export function NowIndicator({ minute, reducedMotion }: NowIndicatorProps) {
   return (
-    <Animated.View
+    <AnimatedView
       entering={reducedMotion ? undefined : FadeIn.duration(300)}
       className="flex-row items-center"
       accessibilityRole="text"
@@ -33,6 +34,6 @@ export function NowIndicator({ minute, reducedMotion }: NowIndicatorProps) {
           {formatMinute(minute)}
         </Text>
       </View>
-    </Animated.View>
+    </AnimatedView>
   );
 }

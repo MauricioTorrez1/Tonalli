@@ -96,6 +96,7 @@ export function DayTimeline({ day, blocks, heading }: DayTimelineProps) {
                 icon={resolveBlockIcon(block, category)}
                 index={index}
                 reducedMotion={reducedMotion}
+                hasPrev={index > 0}
                 hasNext={index < blocks.length - 1}
                 onPress={() =>
                   router.push({

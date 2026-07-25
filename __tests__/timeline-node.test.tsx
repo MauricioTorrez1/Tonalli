@@ -36,6 +36,7 @@ function renderNode(
     index: 0,
     // Skip the entrance animation so tests do not depend on timers.
     reducedMotion: true,
+    hasPrev: false,
     hasNext: false,
     onPress,
     onLongPress,
@@ -53,9 +54,30 @@ describe("TimelineNode", () => {
     expect(screen.getByText("09:00 – 10:00")).toBeTruthy();
   });
 
-  it("prefixes the title with the icon when one is provided", () => {
+  it("renders the icon on the rail pill, leaving the title on its own", () => {
     renderNode({ block: makeBlock({ title: "Gym" }), icon: "💪" });
-    expect(screen.getByText("💪  Gym")).toBeTruthy();
+    expect(screen.getByText("Gym")).toBeTruthy();
+    expect(
+      screen.getByText("💪", { includeHiddenElements: true }),
+    ).toBeTruthy();
+  });
+
+  it("hides the pill icon from assistive tech", () => {
+    // The emoji is decoration duplicating the category the label already
+    // carries; a screen reader announcing "flexed biceps" before every block
+    // title is noise. Querying without hidden elements is how that is
+    // verified — if the pill ever loses accessibilityElementsHidden, this
+    // finds the emoji and fails.
+    renderNode({ block: makeBlock({ title: "Gym" }), icon: "💪" });
+    expect(screen.queryByText("💪")).toBeNull();
+  });
+
+  it("renders the title alone when the block has no icon", () => {
+    renderNode({ block: makeBlock({ title: "Gym" }), icon: undefined });
+    expect(screen.getByText("Gym")).toBeTruthy();
+    expect(
+      screen.queryByText("💪", { includeHiddenElements: true }),
+    ).toBeNull();
   });
 
   it("builds an accessibility label from title, spoken time, and status", () => {

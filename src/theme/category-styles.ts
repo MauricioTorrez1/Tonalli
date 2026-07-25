@@ -17,6 +17,13 @@ interface CategoryStyle {
   softBorder: string;
   /** Small solid circle — category dot, used in chips and pickers. */
   dot: string;
+  /**
+   * Fill for the rail pill. Must be fully opaque: the spine is painted behind
+   * the pill, and any alpha here lets the line ghost through it. That is why
+   * this cannot reuse `softBg`, whose /10 and /20 shades are translucent by
+   * design.
+   */
+  pillBg: string;
 }
 
 export const CATEGORY_STYLES: Record<ColorToken, CategoryStyle> = {
@@ -25,6 +32,7 @@ export const CATEGORY_STYLES: Record<ColorToken, CategoryStyle> = {
     softBg: "bg-category-sky-soft/10 dark:bg-category-sky-soft/20",
     softBorder: "border-category-sky-soft/50 dark:border-category-sky-soft/60",
     dot: "bg-category-sky-solid",
+    pillBg: "bg-category-sky-soft",
   },
   mint: {
     solidBg: "bg-category-mint-solid",
@@ -32,6 +40,7 @@ export const CATEGORY_STYLES: Record<ColorToken, CategoryStyle> = {
     softBorder:
       "border-category-mint-soft/50 dark:border-category-mint-soft/60",
     dot: "bg-category-mint-solid",
+    pillBg: "bg-category-mint-soft",
   },
   amber: {
     solidBg: "bg-category-amber-solid",
@@ -39,6 +48,7 @@ export const CATEGORY_STYLES: Record<ColorToken, CategoryStyle> = {
     softBorder:
       "border-category-amber-soft/50 dark:border-category-amber-soft/60",
     dot: "bg-category-amber-solid",
+    pillBg: "bg-category-amber-soft",
   },
   violet: {
     solidBg: "bg-category-violet-solid",
@@ -46,6 +56,7 @@ export const CATEGORY_STYLES: Record<ColorToken, CategoryStyle> = {
     softBorder:
       "border-category-violet-soft/50 dark:border-category-violet-soft/60",
     dot: "bg-category-violet-solid",
+    pillBg: "bg-category-violet-soft",
   },
   rose: {
     solidBg: "bg-category-rose-solid",
@@ -53,6 +64,7 @@ export const CATEGORY_STYLES: Record<ColorToken, CategoryStyle> = {
     softBorder:
       "border-category-rose-soft/50 dark:border-category-rose-soft/60",
     dot: "bg-category-rose-solid",
+    pillBg: "bg-category-rose-soft",
   },
   stone: {
     solidBg: "bg-category-stone-solid",
@@ -60,5 +72,6 @@ export const CATEGORY_STYLES: Record<ColorToken, CategoryStyle> = {
     softBorder:
       "border-category-stone-soft/50 dark:border-category-stone-soft/60",
     dot: "bg-category-stone-solid",
+    pillBg: "bg-category-stone-soft",
   },
 };
