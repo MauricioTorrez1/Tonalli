@@ -1,12 +1,12 @@
 /**
  * A two-column snapping time picker, built from plain ScrollViews.
  *
- * This replaces `@react-native-community/datetimepicker`, which needed a
- * platform branch (iOS got an inline compact chip, Android a modal dialog) and
- * had no web implementation at all — so the PWA fell into the Android branch
- * and mounted a component that does not exist there. One implementation for
- * all three targets removes that whole class of bug, and it is testable under
- * Jest, which a native picker is not.
+ * This replaced the native date-time picker, which needed a platform branch
+ * (iOS got an inline compact chip, Android a modal dialog) and had no web
+ * implementation at all — so the PWA fell into the Android branch and mounted
+ * a component that does not exist there. One implementation for all three
+ * targets removes that whole class of bug, and it is testable under Jest,
+ * which a native picker is not.
  */
 import { useEffect, useRef } from "react";
 import { ScrollView, Text, View } from "react-native";
