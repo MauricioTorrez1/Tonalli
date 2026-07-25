@@ -5,6 +5,17 @@ jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
+// Gesture Handler ships its own jest setup, which stubs the native module and
+// registers the gesture components. Using it rather than hand-rolling one
+// keeps the mock correct across upgrades.
+require("react-native-gesture-handler/jestSetup");
+
+// @gorhom/bottom-sheet ships a mock entry point that renders the sheet's
+// content inline. Sheet chrome is third-party and not worth asserting on; what
+// matters is that a sheet's body renders and its controls respond, which the
+// official mock preserves.
+jest.mock("@gorhom/bottom-sheet", () => require("@gorhom/bottom-sheet/mock"));
+
 // @expo/vector-icons pulls in expo-font -> expo-asset, a native font-loading
 // chain that does not resolve under a clean Node install (and triggers async
 // state updates that warn about act()). Icons are purely visual, so replace
