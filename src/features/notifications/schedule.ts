@@ -11,23 +11,41 @@ import type { Block } from "@/types/block";
 import type { Recurrence } from "@/types/recurrence";
 import { buildTriggersForBlock, type NotificationTrigger } from "./triggers";
 
+// `shouldPlaySound: true` lets the per-notification `sound` field decide.
+// Leaving it false silenced everything, including blocks whose owner asked for
+// a sound; the mute switch is `content.sound` and the Android channel, below.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
     shouldShowList: true,
-    shouldPlaySound: false,
+    shouldPlaySound: true,
     shouldSetBadge: false,
   }),
 });
 
+/**
+ * Android channel ids. Two of them, because on Android a notification's sound
+ * is a property of its *channel*, fixed when the channel is created — setting
+ * `content.sound` there does nothing. Muting one block therefore means routing
+ * it to a channel that was created silent, not changing the notification.
+ */
+export const SOUND_CHANNEL_ID = "default";
+export const SILENT_CHANNEL_ID = "silent";
+
 /** Must run once at startup, before any notification is scheduled on Android. */
 export async function ensureNotificationChannel(): Promise<void> {
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "Bloques",
-      importance: Notifications.AndroidImportance.DEFAULT,
-    });
+  if (Platform.OS !== "android") {
+    return;
   }
+  await Notifications.setNotificationChannelAsync(SOUND_CHANNEL_ID, {
+    name: "Bloques",
+    importance: Notifications.AndroidImportance.DEFAULT,
+  });
+  await Notifications.setNotificationChannelAsync(SILENT_CHANNEL_ID, {
+    name: "Bloques (sin sonido)",
+    importance: Notifications.AndroidImportance.DEFAULT,
+    sound: null,
+  });
 }
 
 /**
@@ -57,20 +75,29 @@ export async function requestPermission(): Promise<boolean> {
   return requested.granted;
 }
 
+/**
+ * Translate a domain trigger into Expo's input shape.
+ *
+ * `channelId` rides along on the *trigger*, not the content — that is where
+ * expo-notifications reads it. It is ignored outside Android.
+ */
 function toExpoTrigger(
   trigger: NotificationTrigger,
+  channelId: string,
 ): Notifications.SchedulableNotificationTriggerInput {
   switch (trigger.kind) {
     case "date":
       return {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: trigger.date,
+        channelId,
       };
     case "daily":
       return {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour: trigger.hour,
         minute: trigger.minute,
+        channelId,
       };
     case "weekly":
       return {
@@ -78,6 +105,7 @@ function toExpoTrigger(
         weekday: trigger.expoWeekday,
         hour: trigger.hour,
         minute: trigger.minute,
+        channelId,
       };
   }
 }
@@ -95,14 +123,18 @@ export async function scheduleForBlock(
     return [];
   }
   const triggers = buildTriggersForBlock(block, recurrence, now);
+  const channelId = block.soundEnabled ? SOUND_CHANNEL_ID : SILENT_CHANNEL_ID;
   const ids = await Promise.all(
     triggers.map((trigger) =>
       Notifications.scheduleNotificationAsync({
         content: {
           title: block.title,
-          body: "Es hora de tu bloque.",
+          body: trigger.body,
+          // iOS reads this field; Android ignores it and takes the sound from
+          // the channel, which is why both are driven by the same flag.
+          sound: block.soundEnabled ? "default" : false,
         },
-        trigger: toExpoTrigger(trigger),
+        trigger: toExpoTrigger(trigger, channelId),
       }),
     ),
   );

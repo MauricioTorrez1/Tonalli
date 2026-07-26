@@ -3,32 +3,28 @@
  * Plain CommonJS so both tailwind.config.js (Node) and app code (via colors.ts)
  * can consume it without duplication.
  *
- * Two color roles that must stay separate:
- * - `terracotta` is reserved for the "now" timeline marker only — a single,
- *   predictable landmark color the eye learns to find, never reused for a
- *   category.
- * - `category.*` are the vivid, distinguishable hues a block/category can be
- *   colored with (Structured-app inspired). Warm-black backgrounds make them
- *   pop without competing with each other, since only the *current* block is
- *   ever rendered solid — everything else stays a quiet outline. See
- *   docs/adr/0004-focus-first-design-for-attention.md and
- *   docs/adr/0006-vivid-category-colors-on-warm-black.md.
+ * What lives here is only the *chrome*: surfaces, text, and the accent used by
+ * selected controls. Block colors are no longer part of this file — they are
+ * free-form hex chosen per block and resolved at runtime, see
+ * docs/adr/0012-free-form-block-colors.md and src/theme/block-color.ts.
+ *
+ * `terracotta` is the one reserved role color: the "now" timeline marker, a
+ * single predictable landmark the eye learns to find. Never used for anything
+ * else.
  */
 const colors = {
-  // Primary: soft sage green. Calm, warm, natural. Also usable as a category color.
-  sage: {
-    50: "#F3F6F3",
-    100: "#E5ECE6",
-    200: "#CDDACF",
-    300: "#B0C3B4",
-    400: "#96AF9B",
-    500: "#7C9A82",
-    600: "#637E68",
-    700: "#4D6352",
-    800: "#3A4A3E",
-    900: "#2A362D",
+  // The accent every selected control wears: chips, segmented controls, the
+  // add button, the icon tiles in list rows. One accent, used consistently, so
+  // "this is chosen" is learnable at a glance.
+  accent: {
+    DEFAULT: "#5FE3A1",
+    soft: "#8FEFC0",
+    dim: "#2F7A56",
+    // Text and glyphs drawn *on* the accent. Near-black rather than white:
+    // the accent is a light mint, and white on it fails contrast badly.
+    ink: "#04301D",
   },
-  // Reserved for the "now" indicator only — never a category color.
+  // Reserved for the "now" indicator only — never a block color.
   terracotta: {
     50: "#FCF1ED",
     100: "#F8DED5",
@@ -41,34 +37,30 @@ const colors = {
     800: "#823A27",
     900: "#602B1D",
   },
-  // Backgrounds: warm off-white (light) and warm near-black (dark). Never pure
-  // black/white — softer on the eyes, still reads as "dark mode".
-  cream: "#FAF7F2",
-  sand: "#F1ECE3",
-  night: "#121110",
-  nightSurface: "#1D1B19",
-  nightRaised: "#28241F",
-  // Text: warm grays, never pure black or pure white.
-  ink: {
-    DEFAULT: "#3D3A35",
-    muted: "#6F6A61",
-    soft: "#8A8478",
-    inverse: "#F2EFE9",
-    invmuted: "#B5AFA4",
-    invsoft: "#8C8880",
+  // Destructive actions only: delete rows, validation errors.
+  danger: {
+    DEFAULT: "#FF453A",
+    soft: "#FF6961",
   },
-  // Vivid, curated category hues. Fixed set (not a free color picker) — fewer
-  // decisions to make when creating a block. Each hue ships two shades: `solid`
-  // (darker, used as a fill behind white text for the *current* block — passes
-  // AA with white text) and `soft` (lighter, used for tints/dots/outlines on
-  // every other state, where it sits behind normal ink-colored text instead).
-  category: {
-    sky: { solid: "#3E6FD1", soft: "#5B8DEF" }, // Enfoque / deep work
-    mint: { solid: "#2F8F68", soft: "#4FB286" }, // Movimiento / health
-    amber: { solid: "#B87A2A", soft: "#E5A64B" }, // Personal / energy
-    violet: { solid: "#7C5CE0", soft: "#A78BFA" }, // Bienestar / rest, mindfulness
-    rose: { solid: "#D14D79", soft: "#E8739A" }, // Social / connection
-    stone: { solid: "#6B6459", soft: "#8C8478" }, // Neutral — uncategorized
+  // Backgrounds. Dark mode is true black so the vivid block colors carry the
+  // whole screen and OLED panels render the surround as genuinely off — this
+  // replaces the earlier warm near-black, see ADR 0011. Light mode mirrors the
+  // same structure one step up: white page, grouped cards on a faint gray.
+  cream: "#FFFFFF",
+  sand: "#F2F2F7",
+  night: "#000000",
+  nightSurface: "#1C1C1E",
+  nightRaised: "#2C2C2E",
+  // Text, in the four weights the UI actually distinguishes: primary, a muted
+  // secondary, a softer tertiary for labels, and the same ladder inverted for
+  // dark surfaces.
+  ink: {
+    DEFAULT: "#1C1C1E",
+    muted: "#8E8E93",
+    soft: "#636366",
+    inverse: "#FFFFFF",
+    invmuted: "#8E8E93",
+    invsoft: "#AEAEB2",
   },
 };
 

@@ -2,22 +2,22 @@
  * Create/edit form for a single block, shown as a modal. One screen handles
  * both: presence of `?id=` in the route params means "editing".
  *
- * Scope for Phase 1: a block's icon always comes from its category (no
- * per-block icon override UI) and a new block always anchors to today (no day
- * picker yet — only the day view exists; a date picker arrives with the week
- * view in Phase 2). Editing or deleting a recurring block always acts on the
- * whole series, never a single occurrence — see
- * docs/adr/0005-recurrence-virtual-expansion.md.
+ * The screen is a colored header — the block's identity — over a short list of
+ * decisions: when, how often, what it warns you about. Each decision opens a
+ * sheet rather than sitting inline, so the screen reads as a summary of what
+ * has been settled instead of every control at once. Subtasks and notes are
+ * the exceptions and stay inline: they are free text, and text you write in a
+ * sheet is text you cannot see in context.
+ *
+ * Editing or deleting a recurring block always acts on the whole series, never
+ * a single occurrence — see docs/adr/0005-recurrence-virtual-expansion.md.
  */
-import { Feather } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -25,113 +25,66 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AlertsSheetBody } from "@/features/blocks/components/AlertsSheetBody";
+import { BlockColorHeader } from "@/features/blocks/components/BlockColorHeader";
+import { ColorIconSheetBody } from "@/features/blocks/components/ColorIconSheetBody";
+import { ColorPickerSheetBody } from "@/features/blocks/components/ColorPickerSheetBody";
+import {
+  RepeatSheetBody,
+  type FreqOption,
+} from "@/features/blocks/components/RepeatSheetBody";
+import { SubtaskList } from "@/features/blocks/components/SubtaskList";
+import { TimeSheetBody } from "@/features/blocks/components/TimeSheetBody";
 import { DEFAULT_CATEGORIES } from "@/features/categories/default-categories";
 import {
   cancelNotifications,
   requestPermission,
   scheduleForBlock,
+  supportsScheduledNotifications,
 } from "@/features/notifications/schedule";
 import {
-  dateFromDayMinute,
   dayHeading,
+  formatDuration,
   formatMinute,
   todayString,
+  type DayString,
 } from "@/lib/date";
+import { uuidv4 } from "@/lib/id";
 import { useBlockStore } from "@/store/block-store";
-import { BLOCK_COLOR_TOKENS, type ColorToken } from "@/theme/colors";
-import { CATEGORY_STYLES } from "@/theme/category-styles";
+import { NEUTRAL_BLOCK_COLOR, palette } from "@/theme/colors";
 import { useThemeColors } from "@/theme/useThemeColors";
+import { Card } from "@/ui/Card";
+import { Chip } from "@/ui/Chip";
+import { ListRow } from "@/ui/ListRow";
+import { MonthCalendar } from "@/ui/MonthCalendar";
+import { Separator } from "@/ui/Separator";
+import { Sheet, type SheetHandle } from "@/ui/Sheet";
+import type { BlockAlert } from "@/types/alert";
 import type { NewBlock } from "@/types/block";
-import type { RecurrenceFreq } from "@/types/recurrence";
+import type { Subtask } from "@/types/subtask";
 
-const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 // Stable reference for the "no notifications scheduled yet" case — a fresh
 // `[]` literal in the selector below would break Zustand's snapshot equality
 // check and re-render in a loop.
 const NO_NOTIFICATION_IDS: string[] = [];
-const FREQ_LABELS: Record<"none" | RecurrenceFreq, string> = {
+
+const FREQ_SUMMARY: Record<FreqOption, string> = {
   none: "No se repite",
   daily: "Todos los días",
   weekdays: "Días de semana",
   weekly: "Semanal",
 };
 
-function minuteFromDate(date: Date): number {
-  return date.getHours() * 60 + date.getMinutes();
-}
-
-interface TimeFieldProps {
-  label: string;
-  value: Date;
-  onChange: (date: Date) => void;
-  isDark: boolean;
-}
-
 /**
- * A single start/end time field. iOS and Android need genuinely different
- * layouts, not just different `display` props on the same markup — mounting
- * both a custom "09:00" card *and* an always-visible native `compact` picker
- * underneath it (the previous approach) rendered as two redundant, badly
- * stacked time controls. Now there is exactly one visible control per
- * platform:
- * - iOS: the native `compact` picker *is* the field — a small tappable native
- *   chip, inline inside our card.
- * - Android: `compact`/inline display isn't supported, so a custom card shows
- *   the time and opens the native dialog on tap; the picker itself is only
- *   mounted (which is what triggers the dialog) while `show` is true.
+ * A new block warns you when it starts, unless you say otherwise.
+ *
+ * Zero alerts is a legal state and an easy one to end up in by accident; a
+ * planning app whose blocks say nothing by default is a planning app you stop
+ * trusting. Editing an existing block never applies this — its alert list,
+ * empty or not, is what its owner chose.
  */
-function TimeField({ label, value, onChange, isDark }: TimeFieldProps) {
-  const [show, setShow] = useState(false);
-
-  if (Platform.OS === "ios") {
-    return (
-      <View className="flex-1 rounded-card border border-sand bg-cream px-4 py-2 dark:border-nightRaised dark:bg-nightSurface">
-        <Text className="mb-1 font-raleway-medium text-xs text-ink-soft dark:text-ink-invsoft">
-          {label}
-        </Text>
-        <DateTimePicker
-          value={value}
-          mode="time"
-          display="compact"
-          themeVariant={isDark ? "dark" : "light"}
-          onChange={(_event, selected) => {
-            if (selected) onChange(selected);
-          }}
-          style={{ alignSelf: "flex-start", height: 28 }}
-        />
-      </View>
-    );
-  }
-
-  return (
-    <>
-      <Pressable
-        onPress={() => setShow(true)}
-        className="flex-1 rounded-card border border-sand bg-cream px-4 py-3 dark:border-nightRaised dark:bg-nightSurface"
-        accessibilityRole="button"
-        accessibilityLabel={label}
-      >
-        <Text className="font-raleway-medium text-xs text-ink-soft dark:text-ink-invsoft">
-          {label}
-        </Text>
-        <Text className="font-raleway-semibold text-base text-ink dark:text-ink-inverse">
-          {formatMinute(minuteFromDate(value))}
-        </Text>
-      </Pressable>
-      {show ? (
-        <DateTimePicker
-          value={value}
-          mode="time"
-          is24Hour
-          display="default"
-          onChange={(_event, selected) => {
-            setShow(false);
-            if (selected) onChange(selected);
-          }}
-        />
-      ) : null}
-    </>
-  );
+function defaultAlerts(): BlockAlert[] {
+  return [{ id: uuidv4(), anchor: "start", offsetMinutes: 0 }];
 }
 
 export default function BlockFormScreen() {
@@ -144,14 +97,17 @@ export default function BlockFormScreen() {
   }>();
   const isEditing = Boolean(id);
 
+  const dateSheet = useRef<SheetHandle>(null);
+  const timeSheet = useRef<SheetHandle>(null);
+  const repeatSheet = useRef<SheetHandle>(null);
+  const alertsSheet = useRef<SheetHandle>(null);
+  const colorSheet = useRef<SheetHandle>(null);
+  const colorPickerSheet = useRef<SheetHandle>(null);
+
   const existingBlock = useBlockStore((state) =>
     id ? state.blocks.find((b) => b.id === id) : undefined,
   );
   const today = todayString();
-  // The day this block belongs to: its own anchor day when editing, the day
-  // the user was viewing on the timeline when creating (falls back to today
-  // if opened without that param, e.g. a deep link).
-  const targetDay = existingBlock?.day ?? dayParam ?? today;
   const existingRecurrence = useBlockStore((state) =>
     existingBlock?.recurrenceId
       ? state.recurrences.find((r) => r.id === existingBlock.recurrenceId)
@@ -175,26 +131,42 @@ export default function BlockFormScreen() {
   const [categoryId, setCategoryId] = useState<string | undefined>(
     existingBlock?.categoryId,
   );
-  const [colorOverride, setColorOverride] = useState<ColorToken | undefined>(
+  const [colorOverride, setColorOverride] = useState<string | undefined>(
     existingBlock?.color,
   );
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [iconOverride, setIconOverride] = useState<string | undefined>(
+    existingBlock?.icon,
+  );
+  // The block's day is editable now, so it is state rather than a derived
+  // constant: its own day when editing, the day the user was viewing when
+  // creating, and today as the last resort (e.g. a deep link with no param).
+  const [day, setDay] = useState<DayString>(
+    (existingBlock?.day ?? dayParam ?? today) as DayString,
+  );
 
-  const [startDate, setStartDate] = useState(() =>
-    existingBlock
-      ? dateFromDayMinute(existingBlock.day, existingBlock.startMinute)
-      : dateFromDayMinute(targetDay, 9 * 60),
+  const [startMinute, setStartMinute] = useState(
+    existingBlock?.startMinute ?? 9 * 60,
   );
-  const [endDate, setEndDate] = useState(() =>
-    existingBlock
-      ? dateFromDayMinute(existingBlock.day, existingBlock.endMinute)
-      : dateFromDayMinute(targetDay, 10 * 60),
+  const [endMinute, setEndMinute] = useState(
+    existingBlock?.endMinute ?? 10 * 60,
   );
-  const [freq, setFreq] = useState<"none" | RecurrenceFreq>(
+  const [freq, setFreq] = useState<FreqOption>(
     existingRecurrence?.freq ?? "none",
   );
   const [byWeekday, setByWeekday] = useState<number[]>(
     existingRecurrence?.byWeekday ?? [],
+  );
+  const [endsOn, setEndsOn] = useState<DayString | undefined>(
+    existingRecurrence?.endsOn,
+  );
+  const [subtasks, setSubtasks] = useState<Subtask[]>(
+    existingBlock?.subtasks ?? [],
+  );
+  const [alerts, setAlerts] = useState<BlockAlert[]>(
+    existingBlock?.alerts ?? defaultAlerts(),
+  );
+  const [soundEnabled, setSoundEnabled] = useState(
+    existingBlock?.soundEnabled ?? true,
   );
 
   const [error, setError] = useState<string | undefined>();
@@ -203,16 +175,15 @@ export default function BlockFormScreen() {
     () => DEFAULT_CATEGORIES.find((c) => c.id === categoryId),
     [categoryId],
   );
-  const resolvedColor: ColorToken =
-    colorOverride ?? selectedCategory?.color ?? "stone";
+  const resolvedColor =
+    colorOverride ?? selectedCategory?.color ?? NEUTRAL_BLOCK_COLOR;
+  const resolvedIcon = iconOverride ?? selectedCategory?.icon;
 
   async function handleSave() {
     if (title.trim().length === 0) {
       setError("Ponle un título al bloque.");
       return;
     }
-    const startMinute = minuteFromDate(startDate);
-    const endMinute = minuteFromDate(endDate);
     if (endMinute <= startMinute) {
       setError("La hora de fin debe ser después del inicio.");
       return;
@@ -230,18 +201,25 @@ export default function BlockFormScreen() {
         : addRecurrence({
             freq,
             byWeekday: freq === "weekly" ? byWeekday : undefined,
-            startsOn: targetDay,
+            startsOn: day,
+            endsOn,
           });
 
     const input: NewBlock = {
       title: title.trim(),
       notes: notes.trim() || undefined,
       color: colorOverride,
+      icon: iconOverride,
       categoryId,
-      day: targetDay,
+      day,
       startMinute,
       endMinute,
       recurrenceId: newRecurrence?.id,
+      // Blank titles can accumulate from the add-subtask field losing focus
+      // without input; drop them rather than persist rows nobody typed.
+      subtasks: subtasks.filter((subtask) => subtask.title.trim().length > 0),
+      alerts,
+      soundEnabled,
     };
 
     const saved =
@@ -254,10 +232,12 @@ export default function BlockFormScreen() {
     }
 
     await cancelNotifications(notificationIds);
-    const granted = await requestPermission();
+    const granted = alerts.length > 0 ? await requestPermission() : false;
     if (granted) {
       const newIds = await scheduleForBlock(saved, newRecurrence, new Date());
       setNotificationIds(saved.id, newIds);
+    } else {
+      setNotificationIds(saved.id, []);
     }
 
     router.back();
@@ -288,242 +268,123 @@ export default function BlockFormScreen() {
     );
   }
 
-  function toggleWeekday(day: number) {
+  function toggleWeekday(isoDay: number) {
     setByWeekday((prev) =>
-      prev.includes(day)
-        ? prev.filter((d) => d !== day)
-        : [...prev, day].sort(),
+      prev.includes(isoDay)
+        ? prev.filter((d) => d !== isoDay)
+        : [...prev, isoDay].sort(),
     );
   }
+
+  const alertsSummary =
+    alerts.length === 0
+      ? "Sin avisos"
+      : alerts.length === 1
+        ? "1 aviso"
+        : `${alerts.length} avisos`;
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       className="flex-1 bg-cream dark:bg-night"
     >
-      <View
-        className="flex-row items-center justify-between px-5"
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="Cancelar"
-        >
-          <Feather name="x" size={22} color={themeColors.icon} />
-        </Pressable>
-        <View className="items-center">
-          <Text className="font-raleway-semibold text-base text-ink dark:text-ink-inverse">
-            {isEditing ? "Editar bloque" : "Nuevo bloque"}
-          </Text>
-          {targetDay !== today ? (
-            <Text className="font-raleway-medium text-xs text-ink-soft dark:text-ink-invsoft">
-              {dayHeading(targetDay, today)}
-            </Text>
-          ) : null}
-        </View>
-        <Pressable
-          onPress={handleSave}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="Guardar"
-        >
-          <Feather name="check" size={22} color={themeColors.iconStrong} />
-        </Pressable>
-      </View>
+      <BlockColorHeader
+        title={title}
+        onChangeTitle={setTitle}
+        color={resolvedColor}
+        icon={resolvedIcon}
+        startMinute={startMinute}
+        endMinute={endMinute}
+        dayLabel={dayHeading(day, today)}
+        onCancel={() => router.back()}
+        onSave={handleSave}
+        onPressIcon={() => colorSheet.current?.open()}
+      />
 
       <ScrollView
         className="flex-1 px-5"
         contentContainerStyle={{
-          paddingTop: 20,
+          paddingTop: 16,
           paddingBottom: insets.bottom + 40,
         }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Title */}
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Título del bloque"
-          placeholderTextColor={themeColors.icon}
-          className="rounded-card border border-sand bg-cream px-4 py-3 font-raleway-medium text-base text-ink dark:border-nightRaised dark:bg-nightSurface dark:text-ink-inverse"
-          accessibilityLabel="Título del bloque"
-        />
-
         {error ? (
-          <Text className="mt-2 font-raleway text-sm text-terracotta-600 dark:text-terracotta-300">
+          <Text className="mb-3 ml-1 font-raleway text-sm text-danger">
             {error}
           </Text>
         ) : null}
 
-        {/* Category */}
-        <Text className="mb-2 mt-6 font-raleway-semibold text-sm text-ink-soft dark:text-ink-invsoft">
+        <Card>
+          <ListRow
+            icon="calendar"
+            label={dayHeading(day, today)}
+            value={day === today ? undefined : day}
+            onPress={() => dateSheet.current?.open()}
+            accessibilityLabel="Fecha del bloque"
+          />
+          <Separator inset />
+          <ListRow
+            icon="clock"
+            label={`${formatMinute(startMinute)} – ${formatMinute(endMinute)}`}
+            value={formatDuration(endMinute - startMinute)}
+            onPress={() => timeSheet.current?.open()}
+            accessibilityLabel="Horario del bloque"
+          />
+          <Separator inset />
+          <ListRow
+            icon="repeat"
+            label={FREQ_SUMMARY[freq]}
+            onPress={() => repeatSheet.current?.open()}
+            accessibilityLabel="Repetición"
+          />
+          <Separator inset />
+          <ListRow
+            icon="bell"
+            label={alertsSummary}
+            value={
+              alerts.length > 0
+                ? soundEnabled
+                  ? "Con sonido"
+                  : "Silencio"
+                : undefined
+            }
+            onPress={() => alertsSheet.current?.open()}
+            accessibilityLabel="Avisos"
+          />
+        </Card>
+
+        <Text className="mb-2 ml-1 mt-6 font-raleway-semibold text-sm text-ink-soft dark:text-ink-invsoft">
+          Subtareas
+        </Text>
+        <Card className="py-1">
+          <SubtaskList subtasks={subtasks} onChange={setSubtasks} />
+        </Card>
+
+        <Text className="mb-2 ml-1 mt-6 font-raleway-semibold text-sm text-ink-soft dark:text-ink-invsoft">
           Categoría
         </Text>
         <View className="flex-row flex-wrap gap-2">
-          <Pressable
+          <Chip
+            label="Ninguna"
+            selected={categoryId === undefined}
             onPress={() => setCategoryId(undefined)}
-            className={`flex-row items-center rounded-full border px-3 py-2 ${
-              categoryId === undefined
-                ? "border-ink dark:border-ink-inverse"
-                : "border-sand dark:border-nightRaised"
-            }`}
-            accessibilityRole="button"
             accessibilityLabel="Sin categoría"
-          >
-            <Text className="font-raleway-medium text-sm text-ink dark:text-ink-inverse">
-              Ninguna
-            </Text>
-          </Pressable>
-          {DEFAULT_CATEGORIES.map((category) => {
-            const selected = category.id === categoryId;
-            return (
-              <Pressable
-                key={category.id}
-                onPress={() => setCategoryId(category.id)}
-                className={`flex-row items-center gap-2 rounded-full border px-3 py-2 ${
-                  selected
-                    ? "border-ink dark:border-ink-inverse"
-                    : "border-sand dark:border-nightRaised"
-                }`}
-                accessibilityRole="button"
-                accessibilityLabel={category.name}
-              >
-                <View
-                  className={`h-2.5 w-2.5 rounded-full ${CATEGORY_STYLES[category.color].dot}`}
-                />
-                <Text className="font-raleway-medium text-sm text-ink dark:text-ink-inverse">
-                  {category.icon} {category.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* Color override, collapsed by default (progressive disclosure). */}
-        <Pressable
-          onPress={() => setShowColorPicker((v) => !v)}
-          className="mt-4 flex-row items-center gap-2"
-        >
-          <View
-            className={`h-3 w-3 rounded-full ${CATEGORY_STYLES[resolvedColor].dot}`}
           />
-          <Text className="font-raleway-medium text-sm text-ink-soft dark:text-ink-invsoft">
-            {showColorPicker ? "Ocultar colores" : "Cambiar color"}
-          </Text>
-        </Pressable>
-        {showColorPicker ? (
-          <View className="mt-3 flex-row flex-wrap items-center gap-3">
-            <Pressable
-              onPress={() => setColorOverride(undefined)}
-              accessibilityRole="button"
-              accessibilityLabel="Color automático de la categoría"
-              className={`h-9 items-center justify-center rounded-full border-2 px-3 ${
-                colorOverride === undefined
-                  ? "border-ink dark:border-ink-inverse"
-                  : "border-transparent"
-              }`}
-            >
-              <Text className="font-raleway-medium text-xs text-ink dark:text-ink-inverse">
-                Auto
-              </Text>
-            </Pressable>
-            {BLOCK_COLOR_TOKENS.map((token) => (
-              <Pressable
-                key={token}
-                onPress={() => setColorOverride(token)}
-                accessibilityRole="button"
-                accessibilityLabel={`Color ${token}`}
-                className={`h-9 w-9 items-center justify-center rounded-full border-2 ${
-                  colorOverride === token
-                    ? "border-ink dark:border-ink-inverse"
-                    : "border-transparent"
-                }`}
-              >
-                <View
-                  className={`h-6 w-6 rounded-full ${CATEGORY_STYLES[token].dot}`}
-                />
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-
-        {/* Time */}
-        <Text className="mb-2 mt-6 font-raleway-semibold text-sm text-ink-soft dark:text-ink-invsoft">
-          Horario
-        </Text>
-        <View className="flex-row gap-3">
-          <TimeField
-            label="Inicio"
-            value={startDate}
-            onChange={setStartDate}
-            isDark={themeColors.isDark}
-          />
-          <TimeField
-            label="Fin"
-            value={endDate}
-            onChange={setEndDate}
-            isDark={themeColors.isDark}
-          />
-        </View>
-
-        {/* Repeat */}
-        <Text className="mb-2 mt-6 font-raleway-semibold text-sm text-ink-soft dark:text-ink-invsoft">
-          Repetir
-        </Text>
-        <View className="flex-row flex-wrap gap-2">
-          {(["none", "daily", "weekdays", "weekly"] as const).map((option) => (
-            <Pressable
-              key={option}
-              onPress={() => setFreq(option)}
-              className={`rounded-full border px-3 py-2 ${
-                freq === option
-                  ? "border-ink dark:border-ink-inverse"
-                  : "border-sand dark:border-nightRaised"
-              }`}
-              accessibilityRole="button"
-              accessibilityLabel={FREQ_LABELS[option]}
-            >
-              <Text className="font-raleway-medium text-sm text-ink dark:text-ink-inverse">
-                {FREQ_LABELS[option]}
-              </Text>
-            </Pressable>
+          {DEFAULT_CATEGORIES.map((category) => (
+            <Chip
+              key={category.id}
+              label={category.name}
+              dotColor={category.color}
+              selected={category.id === categoryId}
+              onPress={() => setCategoryId(category.id)}
+              accessibilityLabel={category.name}
+            />
           ))}
         </View>
-        {freq === "weekly" ? (
-          <View className="mt-3 flex-row gap-2">
-            {WEEKDAY_LABELS.map((label, i) => {
-              const isoDay = i + 1;
-              const selected = byWeekday.includes(isoDay);
-              return (
-                <Pressable
-                  key={isoDay}
-                  onPress={() => toggleWeekday(isoDay)}
-                  className={`h-9 w-9 items-center justify-center rounded-full border ${
-                    selected
-                      ? "border-category-sky-solid bg-category-sky-solid"
-                      : "border-sand dark:border-nightRaised"
-                  }`}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Día ${label}`}
-                >
-                  <Text
-                    className={`font-raleway-semibold text-xs ${
-                      selected ? "text-white" : "text-ink dark:text-ink-inverse"
-                    }`}
-                  >
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : null}
 
-        {/* Notes */}
-        <Text className="mb-2 mt-6 font-raleway-semibold text-sm text-ink-soft dark:text-ink-invsoft">
-          Notas (opcional)
+        <Text className="mb-2 ml-1 mt-6 font-raleway-semibold text-sm text-ink-soft dark:text-ink-invsoft">
+          Notas
         </Text>
         <TextInput
           value={notes}
@@ -531,23 +392,84 @@ export default function BlockFormScreen() {
           placeholder="Detalles adicionales"
           placeholderTextColor={themeColors.icon}
           multiline
-          className="min-h-20 rounded-card border border-sand bg-cream px-4 py-3 font-raleway text-base text-ink dark:border-nightRaised dark:bg-nightSurface dark:text-ink-inverse"
+          className="min-h-24 rounded-card bg-sand px-4 py-3 font-raleway text-base text-ink dark:bg-nightSurface dark:text-ink-inverse"
           accessibilityLabel="Notas"
         />
 
         {isEditing ? (
-          <Pressable
-            onPress={handleDelete}
-            className="mt-8 items-center"
-            accessibilityRole="button"
-            accessibilityLabel="Eliminar bloque"
-          >
-            <Text className="font-raleway-medium text-sm text-terracotta-600 dark:text-terracotta-300">
-              Eliminar bloque
-            </Text>
-          </Pressable>
+          <Card className="mt-8">
+            <ListRow
+              icon="trash-2"
+              iconTint={palette.danger.DEFAULT}
+              label="Eliminar bloque"
+              destructive
+              showChevron={false}
+              onPress={handleDelete}
+            />
+          </Card>
         ) : null}
       </ScrollView>
+
+      <Sheet ref={dateSheet} title="Fecha">
+        <MonthCalendar
+          selectedDay={day}
+          onSelectDay={(next) => {
+            setDay(next);
+            dateSheet.current?.close();
+          }}
+        />
+      </Sheet>
+
+      <Sheet ref={timeSheet} title="Horario">
+        <TimeSheetBody
+          startMinute={startMinute}
+          endMinute={endMinute}
+          onChange={(next) => {
+            setStartMinute(next.startMinute);
+            setEndMinute(next.endMinute);
+          }}
+        />
+      </Sheet>
+
+      <Sheet ref={repeatSheet} title="Repetir">
+        <RepeatSheetBody
+          freq={freq}
+          onChangeFreq={setFreq}
+          byWeekday={byWeekday}
+          onToggleWeekday={toggleWeekday}
+          startsOn={day}
+          endsOn={endsOn}
+          onChangeEndsOn={setEndsOn}
+        />
+      </Sheet>
+
+      <Sheet ref={alertsSheet} title="Alertas">
+        <AlertsSheetBody
+          alerts={alerts}
+          onChangeAlerts={setAlerts}
+          soundEnabled={soundEnabled}
+          onChangeSound={setSoundEnabled}
+          supported={supportsScheduledNotifications}
+        />
+      </Sheet>
+
+      <Sheet ref={colorSheet} title="Color e icono" snapPoints={["62%"]}>
+        <ColorIconSheetBody
+          color={colorOverride}
+          onChangeColor={setColorOverride}
+          icon={iconOverride}
+          onChangeIcon={setIconOverride}
+          resolvedColor={resolvedColor}
+          onOpenColorPicker={() => colorPickerSheet.current?.open()}
+        />
+      </Sheet>
+
+      <Sheet ref={colorPickerSheet} title="Elegir color">
+        <ColorPickerSheetBody
+          color={resolvedColor}
+          onChange={setColorOverride}
+        />
+      </Sheet>
     </KeyboardAvoidingView>
   );
 }

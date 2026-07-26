@@ -3,6 +3,13 @@
 - **Status:** Accepted
 - **Date:** 2026-07-23
 
+> **Note (2026-07-24):** the decision below stands unchanged. One of its
+> supporting arguments no longer does: the project used to cite avoiding a
+> `react-native-gesture-handler` dependency as a benefit, and that library is
+> now a direct dependency because the block form's sheets are draggable. The
+> reschedule interaction itself is unaffected. See
+> [ADR 10](0010-animation-allowlist.md).
+
 ## Context
 
 The Phase 2 roadmap (and the original brief) called for "drag to reschedule". The day timeline, however, is a flex-stacked list of cards (`TimelineNode`s in a `ScrollView`) — blocks are not positioned by an absolute pixel-per-minute mapping the way a calendar-grid UI (Google Calendar, Structured's own week view) is. Real free-form dragging needs that grid: a ruler, blocks positioned by `top: startMinute * pxPerMinute`, drag gestures that translate pixel deltas back into minutes, auto-scroll while dragging near the edges of the `ScrollView`, and collision/snap behavior. That's a real redesign of the timeline's rendering model, not an incremental addition to the current card list.

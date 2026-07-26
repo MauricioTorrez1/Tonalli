@@ -5,8 +5,17 @@ type Shade = Record<
 >;
 
 export declare const colors: {
-  sage: Shade;
+  accent: {
+    DEFAULT: string;
+    soft: string;
+    dim: string;
+    ink: string;
+  };
   terracotta: Shade;
+  danger: {
+    DEFAULT: string;
+    soft: string;
+  };
   cream: string;
   sand: string;
   night: string;
@@ -20,8 +29,4 @@ export declare const colors: {
     invmuted: string;
     invsoft: string;
   };
-  category: Record<
-    "sky" | "mint" | "amber" | "violet" | "rose" | "stone",
-    { solid: string; soft: string }
-  >;
 };

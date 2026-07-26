@@ -13,7 +13,7 @@
  *
  * Bumping CACHE_NAME still forces a one-time reset for everyone on next deploy.
  */
-const CACHE_NAME = "tonalliblock-v4";
+const CACHE_NAME = "tonalliblock-v6";
 
 self.addEventListener("install", () => {
   self.skipWaiting();

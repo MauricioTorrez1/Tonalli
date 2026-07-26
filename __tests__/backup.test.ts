@@ -1,15 +1,8 @@
 import { buildBackup, parseBackup } from "@/features/backup/utils/backup";
 import { BACKUP_VERSION } from "@/types/backup";
+import { makeBlock } from "./helpers/make-block";
 
-const validBlock = {
-  id: "00000000-0000-4000-8000-000000000000",
-  title: "Deep work",
-  day: "2026-07-22",
-  startMinute: 540,
-  endMinute: 600,
-  createdAt: 0,
-  updatedAt: 0,
-};
+const validBlock = makeBlock();
 
 describe("buildBackup", () => {
   it("stamps the current version and timestamp", () => {

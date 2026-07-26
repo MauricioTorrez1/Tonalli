@@ -47,11 +47,31 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  # The web bundle is what Cloudflare actually serves, and it breaks in ways the
+  # other three checks cannot see: a dependency that is native-only, an
+  # `import.meta` that Metro will not transform, a provider that renders fine on
+  # a device but collapses under react-native-web. Compiling it here turns those
+  # into a red check instead of a broken deploy.
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:web
+      # postexport-web.js writes 404.html; its absence means the export silently
+      # produced nothing usable even though the command exited 0.
+      - name: Verify the export produced a usable bundle
+        run: test -f dist/404.html && test -f dist/index.html
+
   # Aggregation gate: fans in from every check so a single required status
   # reflects the whole suite. Deployment is owned by Cloudflare (push-triggered),
   # so this job asserts quality only and does not deploy.
   ci-passed:
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, test]
+    needs: [lint, typecheck, test, build-web]
     steps:
       - run: echo "All checks passed."

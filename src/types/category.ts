@@ -7,12 +7,13 @@
  */
 import { z } from "zod";
 
-import { BLOCK_COLOR_TOKENS } from "@/theme/colors";
+import { HEX_COLOR_PATTERN } from "@/theme/colors";
 
 export const categorySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  color: z.enum(BLOCK_COLOR_TOKENS),
+  color: z.string().regex(HEX_COLOR_PATTERN, "color must be #RRGGBB"),
+  /** Name of a MaterialCommunityIcons glyph. */
   icon: z.string(),
 });
 

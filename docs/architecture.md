@@ -63,6 +63,10 @@ Each is recorded as an ADR (Architecture Decision Record) in [`adr/`](adr):
 9. [PWA on Cloudflare Pages](adr/0009-pwa-on-cloudflare-pages.md) — web platform
    guards, the generated icon set, the offline service worker, and two Expo
    Router static-export quirks worked around in `+html.tsx`.
+10. [Animation allowlist](adr/0010-animation-allowlist.md) — what motion is
+    permitted and why, replacing ADR 4's numeric cap; the sanctioned exception
+    for the "now" pulse; and the NativeWind trap where `className` is silently
+    dropped on animated and wrapped components.
 
 ## Domain model (Phase 2)
 

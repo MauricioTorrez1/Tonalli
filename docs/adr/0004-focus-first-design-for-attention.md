@@ -1,7 +1,20 @@
 # 4. Focus-first design for attention (ADHD)
 
-- **Status:** Accepted
+- **Status:** Accepted, partially superseded by [ADR 10](0010-animation-allowlist.md) and [ADR 11](0011-structured-visual-language.md)
 - **Date:** 2026-07-22
+
+> **Amendment (2026-07-24):** the "≤ 2 animations per view" limit and the
+> "nothing over 500 ms" rule below are replaced by the allowlist and the two
+> structural limits in [ADR 10](0010-animation-allowlist.md). The principle
+> they were trying to express — motion with purpose, never decoration — is
+> unchanged.
+
+> **Amendment (2026-07-25):** the reduced-choice principle is relaxed in two
+> specific places by [ADR 11](0011-structured-visual-language.md) and
+> [ADR 12](0012-free-form-block-colors.md): the icon set roughly doubles and
+> gains a search field, and block colors become free-form rather than a fixed
+> six. Every other part of this ADR — one focus at a time, low cognitive load,
+> reduce-motion — is unchanged.
 
 ## Context
 

@@ -6,11 +6,16 @@
 import type { Category } from "@/types/category";
 
 export const DEFAULT_CATEGORIES: readonly Category[] = [
-  { id: "enfoque", name: "Enfoque", color: "sky", icon: "🎯" },
-  { id: "movimiento", name: "Movimiento", color: "mint", icon: "🏃" },
-  { id: "personal", name: "Personal", color: "amber", icon: "🌅" },
-  { id: "bienestar", name: "Bienestar", color: "violet", icon: "🧘" },
-  { id: "social", name: "Social", color: "rose", icon: "💬" },
+  { id: "enfoque", name: "Enfoque", color: "#5B8DEF", icon: "target" },
+  { id: "movimiento", name: "Movimiento", color: "#4FB286", icon: "run" },
+  {
+    id: "personal",
+    name: "Personal",
+    color: "#E5A64B",
+    icon: "weather-sunset-up",
+  },
+  { id: "bienestar", name: "Bienestar", color: "#A78BFA", icon: "meditation" },
+  { id: "social", name: "Social", color: "#E8739A", icon: "chat" },
 ];
 
 export function findCategory(id: string | undefined): Category | undefined {

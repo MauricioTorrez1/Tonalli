@@ -58,17 +58,21 @@ export function WeekStrip({ selectedDay, onSelectDay }: WeekStripProps) {
                 {WEEKDAY_SHORT_LABELS[i]}
               </Text>
               <View
-                className={`h-8 w-8 items-center justify-center rounded-full ${
+                className={`h-9 w-9 items-center justify-center rounded-full ${
                   isSelected
-                    ? "bg-category-sky-solid"
+                    ? "bg-accent"
                     : isToday
-                      ? "border border-category-sky-soft/70"
+                      ? "border border-accent/60"
                       : ""
                 }`}
               >
                 <Text
                   className={`font-raleway-semibold text-sm ${
-                    isSelected ? "text-white" : "text-ink dark:text-ink-inverse"
+                    isSelected
+                      ? "text-accent-ink"
+                      : isToday
+                        ? "text-accent"
+                        : "text-ink dark:text-ink-inverse"
                   }`}
                 >
                   {dayOfMonth}

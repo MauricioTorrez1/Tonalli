@@ -1,29 +1,14 @@
 import type { Block } from "@/types/block";
 import type { Recurrence } from "@/types/recurrence";
 import { blocksForDay, occursOn } from "@/features/timeline/utils/recurrence";
+import { makeBlock as baseBlock, makeRecurrence } from "./helpers/make-block";
 
 function makeRule(overrides: Partial<Recurrence> = {}): Recurrence {
-  return {
-    id: "rule-1",
-    freq: "daily",
-    startsOn: "2026-07-01",
-    createdAt: 0,
-    updatedAt: 0,
-    ...overrides,
-  };
+  return makeRecurrence({ id: "rule-1", ...overrides });
 }
 
 function makeBlock(overrides: Partial<Block> = {}): Block {
-  return {
-    id: "block-1",
-    title: "Deep work",
-    day: "2026-07-01",
-    startMinute: 540,
-    endMinute: 600,
-    createdAt: 0,
-    updatedAt: 0,
-    ...overrides,
-  };
+  return baseBlock({ id: "block-1", day: "2026-07-01", ...overrides });
 }
 
 describe("occursOn", () => {
