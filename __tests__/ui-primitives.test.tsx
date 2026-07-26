@@ -171,7 +171,6 @@ describe("ModalHeader", () => {
           title="Nuevo bloque"
           onClose={onClose}
           onConfirm={onConfirm}
-          tintColor="sky"
         />,
       ),
     );

@@ -3,19 +3,11 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import { TimelineNode } from "@/features/timeline/components/TimelineNode";
 import type { Block } from "@/types/block";
 import type { BlockStatus } from "@/features/timeline/utils/timeline-layout";
+import { makeBlock as baseBlock } from "./helpers/make-block";
 
 /** Minimal block factory for tests; overrides win over the defaults. */
 function makeBlock(overrides: Partial<Block> = {}): Block {
-  return {
-    id: "00000000-0000-4000-8000-000000000000",
-    title: "Deep work",
-    day: "2026-07-24",
-    startMinute: 540,
-    endMinute: 600,
-    createdAt: 0,
-    updatedAt: 0,
-    ...overrides,
-  };
+  return baseBlock({ day: "2026-07-24", ...overrides });
 }
 
 /**
@@ -51,33 +43,37 @@ describe("TimelineNode", () => {
   it("shows the block title and its formatted time range", () => {
     renderNode({ block: makeBlock({ title: "Deep work" }) });
     expect(screen.getByText("Deep work")).toBeTruthy();
-    expect(screen.getByText("09:00 – 10:00")).toBeTruthy();
+    expect(screen.getByText(/09:00.*10:00/)).toBeTruthy();
   });
 
   it("renders the icon on the rail pill, leaving the title on its own", () => {
-    renderNode({ block: makeBlock({ title: "Gym" }), icon: "💪" });
+    renderNode({ block: makeBlock({ title: "Gym" }), icon: "dumbbell" });
     expect(screen.getByText("Gym")).toBeTruthy();
     expect(
-      screen.getByText("💪", { includeHiddenElements: true }),
+      screen.getByTestId("icon-dumbbell", { includeHiddenElements: true }),
     ).toBeTruthy();
   });
 
   it("hides the pill icon from assistive tech", () => {
-    // The emoji is decoration duplicating the category the label already
-    // carries; a screen reader announcing "flexed biceps" before every block
-    // title is noise. Querying without hidden elements is how that is
-    // verified — if the pill ever loses accessibilityElementsHidden, this
-    // finds the emoji and fails.
-    renderNode({ block: makeBlock({ title: "Gym" }), icon: "💪" });
-    expect(screen.queryByText("💪")).toBeNull();
+    // The glyph is decoration duplicating what the label already carries; a
+    // screen reader announcing "dumbbell" before every block title is noise.
+    // Querying without hidden elements is how that is verified — if the pill
+    // ever loses accessibilityElementsHidden, this finds the icon and fails.
+    renderNode({ block: makeBlock({ title: "Gym" }), icon: "dumbbell" });
+    expect(screen.queryByTestId("icon-dumbbell")).toBeNull();
   });
 
-  it("renders the title alone when the block has no icon", () => {
+  it("falls back to the neutral glyph when the block has no icon", () => {
+    // Unlike the old emoji version there is no "no icon" state any more: the
+    // pill is a fixed-size shape and an empty one reads as a rendering bug, so
+    // a block without an icon gets the fallback rather than a blank.
     renderNode({ block: makeBlock({ title: "Gym" }), icon: undefined });
     expect(screen.getByText("Gym")).toBeTruthy();
     expect(
-      screen.queryByText("💪", { includeHiddenElements: true }),
-    ).toBeNull();
+      screen.getByTestId("icon-circle-outline", {
+        includeHiddenElements: true,
+      }),
+    ).toBeTruthy();
   });
 
   it("builds an accessibility label from title, spoken time, and status", () => {

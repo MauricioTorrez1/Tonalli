@@ -15,6 +15,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
+import { palette } from "@/theme/colors";
 import { useReducedMotionValue } from "./motion";
 
 interface CheckboxProps {
@@ -68,14 +69,16 @@ export function Checkbox({
       accessibilityLabel={accessibilityLabel}
       className={`h-7 w-7 items-center justify-center rounded-full border-2 ${
         checked
-          ? "border-sage-500 bg-sage-500"
+          ? "border-accent bg-accent"
           : tone === "onSolid"
             ? "border-white/70"
             : "border-ink-soft/40 dark:border-ink-invsoft/40"
       }`}
     >
+      {/* The check is drawn in the accent's own ink color, not white: the
+          accent is a light mint and a white check on it is barely visible. */}
       <Animated.View style={checkStyle}>
-        <Feather name="check" size={14} color="white" />
+        <Feather name="check" size={14} color={palette.accent.ink} />
       </Animated.View>
     </Pressable>
   );

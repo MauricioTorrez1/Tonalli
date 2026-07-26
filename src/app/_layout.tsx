@@ -83,17 +83,9 @@ export default function RootLayout() {
           <ReducedMotionProvider>
             <StatusBar style="auto" />
             <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
+              <Stack.Screen name="(tabs)" />
               <Stack.Screen
                 name="block-form"
-                options={{ presentation: "modal", headerShown: false }}
-              />
-              <Stack.Screen
-                name="settings"
-                options={{ presentation: "modal", headerShown: false }}
-              />
-              <Stack.Screen
-                name="stats"
                 options={{ presentation: "modal", headerShown: false }}
               />
             </Stack>

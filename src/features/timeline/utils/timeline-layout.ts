@@ -5,7 +5,7 @@
  */
 import type { DayString } from "@/lib/date";
 import type { Category } from "@/types/category";
-import type { ColorToken } from "@/theme/colors";
+import { NEUTRAL_BLOCK_COLOR } from "@/theme/colors";
 import { MINUTES_IN_DAY, type Block } from "@/types/block";
 
 /**
@@ -63,14 +63,14 @@ export function getBlockStatus(
 }
 
 /**
- * The color a block should render with: its own override if set, otherwise
- * its category's color, otherwise the neutral fallback.
+ * The color a block should render with, as `#RRGGBB`: its own override if set,
+ * otherwise its category's color, otherwise the neutral fallback.
  */
 export function resolveBlockColor(
   block: Pick<Block, "color">,
   category: Category | undefined,
-): ColorToken {
-  return block.color ?? category?.color ?? "stone";
+): string {
+  return block.color ?? category?.color ?? NEUTRAL_BLOCK_COLOR;
 }
 
 /** The icon a block should render with: its own, otherwise its category's. */

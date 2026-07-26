@@ -24,7 +24,7 @@ const SEED_TEMPLATES: readonly SeedTemplate[] = [
     endMinute: 660,
   },
   {
-    title: "ComidaA",
+    title: "Comida",
     categoryId: "personal",
     startMinute: 780,
     endMinute: 840,
@@ -43,12 +43,22 @@ const SEED_TEMPLATES: readonly SeedTemplate[] = [
   },
 ];
 
-/** Build the seed blocks for a given day. Pure: the clock is passed in. */
+/**
+ * Build the seed blocks for a given day. Pure: the clock is passed in.
+ *
+ * Seeded blocks carry no alerts. `seedIfEmpty` only writes to the store, and
+ * scheduling a notification is I/O that has to go through
+ * `features/notifications/schedule.ts` — handing a block alerts nothing ever
+ * scheduled would show reminders in the UI that never fire.
+ */
 export function buildSeedBlocks(day: string, now: number): Block[] {
   return SEED_TEMPLATES.map((template) => ({
     ...template,
     id: uuidv4(),
     day,
+    subtasks: [],
+    alerts: [],
+    soundEnabled: true,
     createdAt: now,
     updatedAt: now,
   }));

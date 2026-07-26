@@ -11,8 +11,8 @@ import { Feather } from "@expo/vector-icons";
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { CATEGORY_STYLES } from "@/theme/category-styles";
-import type { ColorToken } from "@/theme/colors";
+import { readableTextOn } from "@/theme/block-color";
+import { palette } from "@/theme/colors";
 import { useThemeColors } from "@/theme/useThemeColors";
 
 type FeatherGlyph = React.ComponentProps<typeof Feather>["name"];
@@ -21,8 +21,8 @@ interface ListRowProps {
   label: string;
   /** Leading icon. Omit for a text-only row. */
   icon?: FeatherGlyph;
-  /** Fill behind the icon tile. Defaults to the neutral token. */
-  iconTint?: ColorToken;
+  /** Fill behind the icon tile, as `#RRGGBB`. Defaults to the app accent. */
+  iconTint?: string;
   /** Trailing detail — a summary string, or a node for a swatch or badge. */
   value?: string | ReactNode;
   onPress?: () => void;
@@ -39,7 +39,7 @@ interface ListRowProps {
  *
  * @param label - The row's primary text.
  * @param icon - Optional Feather glyph shown in a tinted leading tile.
- * @param iconTint - Category color token filling the icon tile.
+ * @param iconTint - Hex color filling the icon tile.
  * @param value - Optional trailing detail, as text or a custom node.
  * @param onPress - Handler; when omitted the row renders as static content.
  * @param showChevron - Whether to draw the trailing chevron. Defaults to true
@@ -50,7 +50,7 @@ interface ListRowProps {
 export function ListRow({
   label,
   icon,
-  iconTint = "stone",
+  iconTint = palette.accent.DEFAULT,
   value,
   onPress,
   showChevron,
@@ -67,17 +67,16 @@ export function ListRow({
         // radius is exactly half the height, which renders a circle. The
         // reference's tiles are squares with softened corners.
         <View
-          className={`mr-3 h-8 w-8 items-center justify-center rounded-lg ${CATEGORY_STYLES[iconTint].solidBg}`}
+          className="mr-3 h-8 w-8 items-center justify-center rounded-lg"
+          style={{ backgroundColor: iconTint }}
         >
-          <Feather name={icon} size={16} color="white" />
+          <Feather name={icon} size={16} color={readableTextOn(iconTint)} />
         </View>
       ) : null}
 
       <Text
-        className={`flex-1 font-raleway-medium text-sm ${
-          destructive
-            ? "text-terracotta-600 dark:text-terracotta-300"
-            : "text-ink dark:text-ink-inverse"
+        className={`flex-1 font-raleway-medium text-base ${
+          destructive ? "text-danger" : "text-ink dark:text-ink-inverse"
         }`}
       >
         {label}

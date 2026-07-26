@@ -1,6 +1,6 @@
 # 6. Vivid category colors on warm-black, current-block-only solid fill
 
-- **Status:** Accepted
+- **Status:** Accepted, partially superseded by [ADR 11](0011-structured-visual-language.md) and [ADR 12](0012-free-form-block-colors.md)
 - **Date:** 2026-07-22
 
 > **Clarification (2026-07-24):** the timeline node's rail pill carries its
@@ -8,6 +8,15 @@
 > shade stays reserved for the current block, so §3 below holds: the pill is a
 > category landmark, the solid fill is still what marks "now". See
 > [ADR 10](0010-animation-allowlist.md).
+
+> **Amendment (2026-07-25):** two of this ADR's three pillars have been
+> replaced. The warm-black surround is now true black
+> ([ADR 11](0011-structured-visual-language.md)), and the fixed set of six
+> hues is now free-form hex resolved at runtime
+> ([ADR 12](0012-free-form-block-colors.md)) — `category-styles.ts`, described
+> below, no longer exists. What still holds, and is the part worth keeping, is
+> §3: only the *current* block is rendered in a solid fill, and `terracotta`
+> remains reserved for the now-indicator.
 
 ## Context
 

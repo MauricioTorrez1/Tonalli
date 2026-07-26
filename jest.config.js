@@ -5,6 +5,9 @@ module.exports = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
+  // jest-expo's testMatch treats every file under __tests__ as a suite, so the
+  // shared fixtures there would be collected and fail with "no tests".
+  testPathIgnorePatterns: ["/node_modules/", "<rootDir>/__tests__/helpers/"],
   // Note: react-native-gesture-handler needs no entry here — the leading
   // `(jest-)?react-native` alternative is unanchored, so it already matches by
   // prefix. Only the @gorhom packages, which ship untranspiled ESM under a

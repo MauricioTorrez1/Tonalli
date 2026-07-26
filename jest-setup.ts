@@ -18,11 +18,33 @@ jest.mock("@gorhom/bottom-sheet", () => require("@gorhom/bottom-sheet/mock"));
 
 // @expo/vector-icons pulls in expo-font -> expo-asset, a native font-loading
 // chain that does not resolve under a clean Node install (and triggers async
-// state updates that warn about act()). Icons are purely visual, so replace
-// every icon set with a component that renders nothing. The factory returns no
-// JSX/createElement on purpose: nativewind's babel transform would otherwise
-// inject an out-of-scope helper, which jest.mock hoisting forbids.
-jest.mock("@expo/vector-icons", () => new Proxy({}, { get: () => () => null }));
+// state updates that warn about act()). Every icon set is replaced with a bare
+// View carrying `testID="icon-<name>"`.
+//
+// It used to render nothing at all, which was fine when block icons were emoji
+// — those were real Text nodes a test could find. Now that they are glyphs, a
+// component rendering null would make "does this block show its icon?"
+// unanswerable in a test. The testID keeps that assertable without pulling in
+// the font machinery.
+//
+// No JSX here on purpose: nativewind's babel transform would inject an
+// out-of-scope helper, which jest.mock hoisting forbids. `createElement` via a
+// lazy require inside the factory is the way around that.
+jest.mock(
+  "@expo/vector-icons",
+  () =>
+    new Proxy(
+      {},
+      {
+        get:
+          () =>
+          ({ name }: { name: string }) =>
+            require("react").createElement(require("react-native").View, {
+              testID: `icon-${name}`,
+            }),
+      },
+    ),
+);
 
 // Reanimated pulls in native modules that do not exist under Node, and its
 // shipped mock still imports the native FlatList (broken on Reanimated 4), so

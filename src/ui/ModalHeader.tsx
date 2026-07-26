@@ -2,18 +2,15 @@
  * The top bar of a modal screen: close on the left, title in the middle, and
  * an optional confirm action on the right.
  *
- * Passing `tintColor` floods the bar with a category's solid fill and moves
- * the controls into translucent circles. That is what makes an open block feel
- * like *that* block rather than a generic form — the color is the block's
- * identity, carried from its node on the timeline into the screen that edits
- * it.
+ * This header used to take a `tintColor` and flood itself with a block's fill.
+ * That job moved to `BlockColorHeader`, which does much more than tint a bar —
+ * it carries the block's icon, time and title. What is left here is the plain
+ * bar the utility modals need.
  */
 import { Feather } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { CATEGORY_STYLES } from "@/theme/category-styles";
-import type { ColorToken } from "@/theme/colors";
 import { useThemeColors } from "@/theme/useThemeColors";
 
 interface ModalHeaderProps {
@@ -23,8 +20,6 @@ interface ModalHeaderProps {
   onClose: () => void;
   /** Adds a confirm control on the right. Omit for read-only screens. */
   onConfirm?: () => void;
-  /** Floods the bar with this category's solid fill. */
-  tintColor?: ColorToken;
   closeLabel?: string;
   confirmLabel?: string;
 }
@@ -36,7 +31,6 @@ interface ModalHeaderProps {
  * @param subtitle - Optional secondary line under the title.
  * @param onClose - Handler for the leading close control.
  * @param onConfirm - Optional handler for the trailing confirm control.
- * @param tintColor - Category token that floods the bar with a solid fill.
  * @param closeLabel - Accessible label for the close control.
  * @param confirmLabel - Accessible label for the confirm control.
  */
@@ -45,26 +39,15 @@ export function ModalHeader({
   subtitle,
   onClose,
   onConfirm,
-  tintColor,
   closeLabel = "Cerrar",
   confirmLabel = "Guardar",
 }: ModalHeaderProps) {
   const insets = useSafeAreaInsets();
   const themeColors = useThemeColors();
-  const tinted = tintColor !== undefined;
-
-  // On a solid category fill, white is the only reliably AA-compliant ink —
-  // the `-solid` shades were chosen for exactly that (see ADR 0006).
-  const controlColor = tinted ? "white" : themeColors.icon;
-  const controlClass = tinted
-    ? "h-8 w-8 items-center justify-center rounded-full bg-white/20"
-    : "";
 
   return (
     <View
-      className={`flex-row items-center justify-between px-5 pb-3 ${
-        tinted ? CATEGORY_STYLES[tintColor].solidBg : ""
-      }`}
+      className="flex-row items-center justify-between px-5 pb-3"
       style={{ paddingTop: insets.top + 12 }}
     >
       <Pressable
@@ -72,26 +55,21 @@ export function ModalHeader({
         hitSlop={12}
         accessibilityRole="button"
         accessibilityLabel={closeLabel}
-        className={controlClass}
       >
-        <Feather name="x" size={22} color={controlColor} />
+        <Feather name="x" size={22} color={themeColors.icon} />
       </Pressable>
 
       <View className="flex-1 items-center px-2">
         <Text
           numberOfLines={1}
-          className={`font-raleway-semibold text-base ${
-            tinted ? "text-white" : "text-ink dark:text-ink-inverse"
-          }`}
+          className="font-raleway-semibold text-base text-ink dark:text-ink-inverse"
         >
           {title}
         </Text>
         {subtitle ? (
           <Text
             numberOfLines={1}
-            className={`font-raleway-medium text-xs ${
-              tinted ? "text-white/80" : "text-ink-soft dark:text-ink-invsoft"
-            }`}
+            className="font-raleway-medium text-xs text-ink-soft dark:text-ink-invsoft"
           >
             {subtitle}
           </Text>
@@ -104,13 +82,8 @@ export function ModalHeader({
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel={confirmLabel}
-          className={controlClass}
         >
-          <Feather
-            name="check"
-            size={22}
-            color={tinted ? "white" : themeColors.iconStrong}
-          />
+          <Feather name="check" size={22} color={themeColors.iconStrong} />
         </Pressable>
       ) : (
         // Balances the close control so the title stays optically centered.

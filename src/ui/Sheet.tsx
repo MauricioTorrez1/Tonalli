@@ -1,6 +1,6 @@
 /**
- * A draggable bottom sheet, used for the block form's sub-decisions (time,
- * repeat, color and icon).
+ * A bottom sheet, used for the block form's sub-decisions (date, time, repeat,
+ * alerts, color and icon).
  *
  * Sheets rather than pushed screens because these are adjustments to something
  * the user is already looking at, not places to go. The block stays visible
@@ -49,24 +49,37 @@ export interface SheetHandle {
 interface SheetProps {
   title: string;
   children: ReactNode;
+  /**
+   * Fixed heights, e.g. `["60%"]`. Omit to size the sheet to its content.
+   *
+   * Pass this when the body scrolls internally: dynamic sizing measures the
+   * content, and a scrollable child reports whatever fits, which strands a
+   * long grid at a fraction of the screen.
+   */
+  snapPoints?: (string | number)[];
   /** Called after the sheet finishes closing, however it was dismissed. */
   onClose?: () => void;
 }
 
 /**
- * A bottom sheet with a title bar and a tap-to-dismiss backdrop.
+ * A bottom sheet with a title bar, a close button, and a tap-to-dismiss
+ * backdrop.
  *
- * Height follows the content rather than fixed snap points: these sheets range
- * from a four-option segmented control to a full icon grid, and a shared snap
- * point would either crop the tall ones or strand the short ones halfway up
- * the screen.
+ * Dragging the *body* does not dismiss the sheet
+ * (`enableContentPanningGesture={false}`). Every one of these sheets holds
+ * something scrollable — a time wheel, an icon grid — and with content panning
+ * on, the sheet cannot tell a fast flick inside a nested ScrollView from a
+ * drag on itself, so scrolling the hour column quickly threw the whole sheet
+ * closed. Dismissal is now the close button, the backdrop, or a drag on the
+ * handle: three deliberate targets instead of one ambiguous gesture.
  *
  * @param title - Heading shown at the top of the sheet.
  * @param children - The sheet's body.
+ * @param snapPoints - Fixed heights; omit for content-sized.
  * @param onClose - Called once the sheet has finished closing.
  */
 export const Sheet = forwardRef<SheetHandle, SheetProps>(function Sheet(
-  { title, children, onClose },
+  { title, children, snapPoints, onClose },
   ref,
 ) {
   const sheetRef = useRef<BottomSheet>(null);
@@ -85,6 +98,7 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function Sheet(
         appearsOnIndex={0}
         disappearsOnIndex={-1}
         pressBehavior="close"
+        opacity={0.6}
       />
     ),
     [],
@@ -99,35 +113,52 @@ export const Sheet = forwardRef<SheetHandle, SheetProps>(function Sheet(
     [themeColors.grabber],
   );
 
+  const header = (
+    <View className="flex-row items-center justify-between px-5 pb-3 pt-1">
+      <Text className="font-raleway-bold text-2xl text-ink dark:text-ink-inverse">
+        {title}
+      </Text>
+      <Pressable
+        onPress={() => sheetRef.current?.close()}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel="Cerrar"
+        className="h-9 w-9 items-center justify-center rounded-full bg-sand dark:bg-nightRaised"
+      >
+        <Feather name="x" size={20} color={themeColors.iconStrong} />
+      </Pressable>
+    </View>
+  );
+
   return (
     <BottomSheet
       ref={sheetRef}
       index={-1}
       enablePanDownToClose
-      enableDynamicSizing
+      enableContentPanningGesture={false}
+      enableDynamicSizing={snapPoints === undefined}
+      snapPoints={snapPoints}
       animationConfigs={ANIMATION_CONFIG}
       backdropComponent={renderBackdrop}
       backgroundStyle={backgroundStyle}
       handleIndicatorStyle={handleIndicatorStyle}
       onClose={onClose}
     >
-      <BottomSheetView style={{ paddingBottom: insets.bottom + 24 }}>
-        <View className="flex-row items-center justify-between px-5 pb-2">
-          <Text className="font-raleway-semibold text-base text-ink dark:text-ink-inverse">
-            {title}
-          </Text>
-          <Pressable
-            onPress={() => sheetRef.current?.close()}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar"
-            className="h-8 w-8 items-center justify-center rounded-full bg-sand dark:bg-nightRaised"
-          >
-            <Feather name="x" size={16} color={themeColors.icon} />
-          </Pressable>
+      {/* With fixed snap points the sheet has a height of its own, so the body
+          fills it; with dynamic sizing BottomSheetView is what reports the
+          measured height, and wrapping it in a flex container would defeat
+          that. Hence the branch rather than one shared wrapper. */}
+      {snapPoints === undefined ? (
+        <BottomSheetView style={{ paddingBottom: insets.bottom + 24 }}>
+          {header}
+          {children}
+        </BottomSheetView>
+      ) : (
+        <View style={{ flex: 1, paddingBottom: insets.bottom + 16 }}>
+          {header}
+          {children}
         </View>
-        {children}
-      </BottomSheetView>
+      )}
     </BottomSheet>
   );
 });

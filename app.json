@@ -15,7 +15,7 @@
     "android": {
       "package": "mx.tonalliblock.app",
       "adaptiveIcon": {
-        "backgroundColor": "#FAF7F2",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
@@ -30,17 +30,17 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
-          "backgroundColor": "#FAF7F2",
+          "backgroundColor": "#FFFFFF",
           "imageWidth": 160,
           "dark": {
-            "backgroundColor": "#121110"
+            "backgroundColor": "#000000"
           }
         }
       ],
       [
         "expo-notifications",
         {
-          "color": "#3E6FD1"
+          "color": "#5FE3A1"
         }
       ]
     ],

@@ -5,18 +5,11 @@ import {
   minutesByCategory,
   UNCATEGORIZED,
 } from "@/features/stats/utils/stats";
+import { makeBlock as baseBlock } from "./helpers/make-block";
 
 function makeBlock(overrides: Partial<Block> = {}): Block {
-  return {
-    id: "b1",
-    title: "Deep work",
-    day: "2026-07-20",
-    startMinute: 540,
-    endMinute: 600, // 60 minutes
-    createdAt: 0,
-    updatedAt: 0,
-    ...overrides,
-  };
+  // 540–600 is 60 minutes, which the expectations below count on.
+  return baseBlock({ id: "b1", day: "2026-07-20", ...overrides });
 }
 
 describe("minutesByCategory", () => {

@@ -1,4 +1,5 @@
 import type { Category } from "@/types/category";
+import { NEUTRAL_BLOCK_COLOR } from "@/theme/colors";
 import type { Block } from "@/types/block";
 import {
   applyDuration,
@@ -10,19 +11,11 @@ import {
   shiftBlockTime,
   sortByStart,
 } from "@/features/timeline/utils/timeline-layout";
+import { makeBlock as baseBlock } from "./helpers/make-block";
 
 /** Minimal block factory for tests; overrides win over the defaults. */
 function makeBlock(overrides: Partial<Block> = {}): Block {
-  return {
-    id: "00000000-0000-4000-8000-000000000000",
-    title: "Test",
-    day: "2026-07-22",
-    startMinute: 540,
-    endMinute: 600,
-    createdAt: 0,
-    updatedAt: 0,
-    ...overrides,
-  };
+  return baseBlock({ title: "Test", ...overrides });
 }
 
 describe("sortByStart", () => {
@@ -96,30 +89,42 @@ describe("getBlockStatus", () => {
 });
 
 describe("resolveBlockColor", () => {
-  const category: Category = { id: "x", name: "X", color: "mint", icon: "🌿" };
+  const category: Category = {
+    id: "x",
+    name: "X",
+    color: "#4FB286",
+    icon: "leaf",
+  };
 
   it("prefers the block's own color override", () => {
-    expect(resolveBlockColor({ color: "rose" }, category)).toBe("rose");
+    expect(resolveBlockColor({ color: "#E8739A" }, category)).toBe("#E8739A");
   });
 
   it("falls back to the category color", () => {
-    expect(resolveBlockColor({ color: undefined }, category)).toBe("mint");
+    expect(resolveBlockColor({ color: undefined }, category)).toBe("#4FB286");
   });
 
-  it("falls back to the neutral token when there is no category either", () => {
-    expect(resolveBlockColor({ color: undefined }, undefined)).toBe("stone");
+  it("falls back to the neutral color when there is no category either", () => {
+    expect(resolveBlockColor({ color: undefined }, undefined)).toBe(
+      NEUTRAL_BLOCK_COLOR,
+    );
   });
 });
 
 describe("resolveBlockIcon", () => {
-  const category: Category = { id: "x", name: "X", color: "mint", icon: "🌿" };
+  const category: Category = {
+    id: "x",
+    name: "X",
+    color: "#4FB286",
+    icon: "leaf",
+  };
 
   it("prefers the block's own icon", () => {
-    expect(resolveBlockIcon({ icon: "🔥" }, category)).toBe("🔥");
+    expect(resolveBlockIcon({ icon: "fire" }, category)).toBe("fire");
   });
 
   it("falls back to the category icon", () => {
-    expect(resolveBlockIcon({ icon: undefined }, category)).toBe("🌿");
+    expect(resolveBlockIcon({ icon: undefined }, category)).toBe("leaf");
   });
 
   it("returns undefined when neither is set", () => {

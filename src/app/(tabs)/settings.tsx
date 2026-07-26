@@ -1,9 +1,8 @@
 /**
- * Theme preference, notifications, stats link, backup/restore, and an
- * optional donation link. A modal, reachable from the fixed header on the
- * day screen.
+ * Theme preference, notifications, backup/restore, and an optional donation
+ * link. A tab, not a modal: these are things the user dips into and comes back
+ * from, and a modal would make each visit feel like leaving the app.
  */
-import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Linking, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,6 +15,7 @@ import {
   scheduleForBlock,
   supportsScheduledNotifications,
 } from "@/features/notifications/schedule";
+import { TAB_BAR_CLEARANCE } from "@/features/navigation/tab-bar-metrics";
 import { donationUrl } from "@/lib/config";
 import { useBlockStore } from "@/store/block-store";
 import {
@@ -23,9 +23,9 @@ import {
   useThemeStore,
   type ThemeMode,
 } from "@/store/theme-store";
+import { palette } from "@/theme/colors";
 import { Card } from "@/ui/Card";
 import { ListRow } from "@/ui/ListRow";
-import { ModalHeader } from "@/ui/ModalHeader";
 import { SegmentedControl } from "@/ui/SegmentedControl";
 import { Separator } from "@/ui/Separator";
 
@@ -57,7 +57,7 @@ function SupportLink({ url }: { url: string }) {
       <Card>
         <ListRow
           icon="coffee"
-          iconTint="rose"
+          iconTint="#E8739A"
           label="Apóyame"
           onPress={() => Linking.openURL(url)}
         />
@@ -67,7 +67,6 @@ function SupportLink({ url }: { url: string }) {
 }
 
 export default function SettingsScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const mode = useThemeStore((state) => state.mode);
   const setMode = useThemeStore((state) => state.setMode);
@@ -143,13 +142,17 @@ export default function SettingsScreen() {
 
   return (
     <View className="flex-1 bg-cream dark:bg-night">
-      <ModalHeader title="Ajustes" onClose={() => router.back()} />
+      <View className="px-5 pb-2" style={{ paddingTop: insets.top + 8 }}>
+        <Text className="font-lora-semibold text-4xl text-ink dark:text-ink-inverse">
+          Ajustes
+        </Text>
+      </View>
 
       <ScrollView
         className="flex-1 px-5"
         contentContainerStyle={{
           paddingTop: 8,
-          paddingBottom: insets.bottom + 40,
+          paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + 16,
         }}
       >
         <Text className="mb-2 ml-1 font-raleway-semibold text-sm text-ink-soft dark:text-ink-invsoft">
@@ -172,42 +175,31 @@ export default function SettingsScreen() {
           ) : notificationsGranted ? (
             <ListRow
               icon="bell"
-              iconTint="mint"
               label="Activadas"
-              value="Aviso al empezar"
+              value="Se avisará según cada bloque"
             />
           ) : (
             <ListRow
               icon="bell"
-              iconTint="amber"
+              iconTint="#E5A64B"
               label="Activar notificaciones"
               onPress={handleEnableNotifications}
             />
           )}
         </Card>
 
-        <SectionLabel>Tu progreso</SectionLabel>
-        <Card>
-          <ListRow
-            icon="bar-chart-2"
-            iconTint="violet"
-            label="Ver estadísticas"
-            onPress={() => router.push("/stats")}
-          />
-        </Card>
-
         <SectionLabel>Tus datos</SectionLabel>
         <Card>
           <ListRow
             icon="upload"
-            iconTint="sky"
+            iconTint={palette.accent.dim}
             label="Exportar respaldo"
             onPress={handleExport}
           />
           <Separator inset />
           <ListRow
             icon="download"
-            iconTint="sky"
+            iconTint={palette.accent.dim}
             label="Restaurar desde archivo"
             onPress={handleRestore}
           />

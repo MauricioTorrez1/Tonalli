@@ -10,6 +10,7 @@ import { Alert, ScrollView, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { findCategory } from "@/features/categories/default-categories";
+import { TAB_BAR_CLEARANCE } from "@/features/navigation/tab-bar-metrics";
 import { nowMinute, todayString, type DayString } from "@/lib/date";
 import { useBlockStore } from "@/store/block-store";
 import type { Block } from "@/types/block";
@@ -29,11 +30,9 @@ interface DayTimelineProps {
   /** The day being viewed, e.g. from the week strip — not necessarily today. */
   day: DayString;
   blocks: Block[];
-  /** Human title for the day, e.g. "Hoy" or "Miércoles 22". */
-  heading: string;
 }
 
-export function DayTimeline({ day, blocks, heading }: DayTimelineProps) {
+export function DayTimeline({ day, blocks }: DayTimelineProps) {
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotionValue();
   const router = useRouter();
@@ -65,15 +64,13 @@ export function DayTimeline({ day, blocks, heading }: DayTimelineProps) {
     <ScrollView
       className="flex-1 bg-cream dark:bg-night"
       contentContainerStyle={{
-        paddingTop: 8,
-        paddingBottom: insets.bottom + 96,
+        paddingTop: 12,
+        // Clears the floating tab bar, which overlays this list rather than
+        // reserving space in the layout.
+        paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + 16,
         paddingHorizontal: 20,
       }}
     >
-      <Text className="mb-6 font-lora-semibold text-3xl text-ink dark:text-ink-inverse">
-        {heading}
-      </Text>
-
       {blocks.length === 0 ? (
         <Text className="mt-12 text-center font-raleway text-ink-muted dark:text-ink-invmuted">
           {isToday

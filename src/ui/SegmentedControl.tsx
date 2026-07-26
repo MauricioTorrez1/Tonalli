@@ -52,12 +52,12 @@ export function SegmentedControl<T extends string>({
             accessibilityState={{ selected }}
             accessibilityLabel={option.label}
             className={`flex-1 items-center rounded-full py-2 ${
-              selected ? "bg-category-sky-solid" : ""
+              selected ? "bg-accent" : ""
             }`}
           >
             <Text
-              className={`font-raleway-medium text-sm ${
-                selected ? "text-white" : "text-ink dark:text-ink-inverse"
+              className={`font-raleway-semibold text-sm ${
+                selected ? "text-accent-ink" : "text-ink dark:text-ink-inverse"
               }`}
             >
               {option.label}

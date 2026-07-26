@@ -7,15 +7,12 @@
  */
 import { Pressable, Text, View } from "react-native";
 
-import { CATEGORY_STYLES } from "@/theme/category-styles";
-import type { ColorToken } from "@/theme/colors";
-
 interface ChipProps {
   label: string;
   selected: boolean;
   onPress: () => void;
-  /** Optional leading dot, used by category chips to preview their color. */
-  dotColor?: ColorToken;
+  /** Optional leading dot as `#RRGGBB`, previewing a category's color. */
+  dotColor?: string;
   /** Defaults to `label`. */
   accessibilityLabel?: string;
 }
@@ -26,7 +23,7 @@ interface ChipProps {
  * @param label - The chip's text.
  * @param selected - Whether this chip is the active choice.
  * @param onPress - Selection handler.
- * @param dotColor - Category token for an optional leading color dot.
+ * @param dotColor - Hex color for an optional leading dot.
  * @param accessibilityLabel - Overrides the announced label.
  */
 export function Chip({
@@ -42,22 +39,22 @@ export function Chip({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={accessibilityLabel ?? label}
-      className={`flex-row items-center gap-2 rounded-full border px-3 py-2 ${
+      className={`flex-row items-center gap-2 rounded-full border px-3.5 py-2 ${
         selected
-          ? "border-category-sky-solid bg-category-sky-solid"
-          : "border-sand dark:border-nightRaised"
+          ? "border-accent bg-accent"
+          : "border-sand bg-sand dark:border-nightRaised dark:bg-nightRaised"
       }`}
     >
       {dotColor ? (
         <View
-          className={`h-2.5 w-2.5 rounded-full ${
-            selected ? "bg-white/80" : CATEGORY_STYLES[dotColor].dot
-          }`}
+          className="h-2.5 w-2.5 rounded-full"
+          // A block color is arbitrary hex now, so it cannot come from a class.
+          style={{ backgroundColor: dotColor }}
         />
       ) : null}
       <Text
-        className={`font-raleway-medium text-sm ${
-          selected ? "text-white" : "text-ink dark:text-ink-inverse"
+        className={`font-raleway-semibold text-sm ${
+          selected ? "text-accent-ink" : "text-ink dark:text-ink-inverse"
         }`}
       >
         {label}

@@ -9,7 +9,7 @@
  * which a native picker is not.
  */
 import { useEffect, useRef } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View, type NativeScrollEvent } from "react-native";
 
 const ROW_HEIGHT = 40;
 const VISIBLE_ROWS = 5;
@@ -47,17 +47,32 @@ interface WheelColumnProps {
 function WheelColumn({ values, selected, onSelect, label }: WheelColumnProps) {
   const scrollRef = useRef<ScrollView>(null);
   const selectedIndex = values.indexOf(selected);
+  // True from the moment a drag begins until the column has settled and
+  // reported its value. See the sync effect below for why that matters.
+  const isUserScrolling = useRef(false);
 
   // Keep the column in sync when the value changes from outside — picking a
-  // duration chip moves the end time, and the wheel has to follow.
+  // duration chip moves the end time, and the wheel has to follow. Skipped
+  // while the user is scrolling this very column: committing a value re-renders
+  // the parent with a new `selected`, and scrolling the column back to it
+  // mid-gesture fights the finger.
   useEffect(() => {
-    if (selectedIndex >= 0) {
+    if (selectedIndex >= 0 && !isUserScrolling.current) {
       scrollRef.current?.scrollTo({
         y: selectedIndex * ROW_HEIGHT,
         animated: false,
       });
     }
   }, [selectedIndex]);
+
+  function commit(event: { nativeEvent: NativeScrollEvent }) {
+    isUserScrolling.current = false;
+    const index = Math.round(event.nativeEvent.contentOffset.y / ROW_HEIGHT);
+    const value = values[Math.max(0, Math.min(values.length - 1, index))];
+    if (value !== selected) {
+      onSelect(value);
+    }
+  }
 
   return (
     <ScrollView
@@ -72,15 +87,15 @@ function WheelColumn({ values, selected, onSelect, label }: WheelColumnProps) {
       contentContainerStyle={{
         paddingVertical: (ROW_HEIGHT * (VISIBLE_ROWS - 1)) / 2,
       }}
-      onMomentumScrollEnd={(event) => {
-        const index = Math.round(
-          event.nativeEvent.contentOffset.y / ROW_HEIGHT,
-        );
-        const value = values[Math.max(0, Math.min(values.length - 1, index))];
-        if (value !== selected) {
-          onSelect(value);
-        }
+      onScrollBeginDrag={() => {
+        isUserScrolling.current = true;
       }}
+      // Both handlers commit, because only one of them fires per gesture: a
+      // flick ends in momentum, a slow release ends the drag with none. Landing
+      // only on momentum left the column visually parked on a value it had
+      // never reported — the bug where picking a time appeared to do nothing.
+      onScrollEndDrag={commit}
+      onMomentumScrollEnd={commit}
     >
       {values.map((value) => (
         <View
@@ -89,7 +104,7 @@ function WheelColumn({ values, selected, onSelect, label }: WheelColumnProps) {
           style={{ height: ROW_HEIGHT }}
         >
           <Text
-            className={`font-raleway-semibold text-xl ${
+            className={`font-raleway-semibold text-2xl ${
               value === selected
                 ? "text-ink dark:text-ink-inverse"
                 : "text-ink-muted dark:text-ink-invmuted"
@@ -130,22 +145,34 @@ export function TimeWheel({
 
   return (
     <View accessibilityLabel={accessibilityLabel} className="items-center">
-      <View className="flex-row items-center justify-center gap-6">
-        <WheelColumn
-          values={HOURS}
-          selected={hour}
-          onSelect={(nextHour) => onChange(nextHour * 60 + minuteInHour)}
-          label="Horas"
+      <View style={{ height: ROW_HEIGHT * VISIBLE_ROWS }}>
+        {/* The selection band, drawn behind the columns: it marks where the
+            chosen row lands instead of relying on the text weight alone. */}
+        <View
+          pointerEvents="none"
+          className="absolute left-0 right-0 rounded-xl bg-sand dark:bg-nightRaised"
+          style={{
+            height: ROW_HEIGHT,
+            top: (ROW_HEIGHT * (VISIBLE_ROWS - 1)) / 2,
+          }}
         />
-        <Text className="font-raleway-semibold text-xl text-ink-soft dark:text-ink-invsoft">
-          :
-        </Text>
-        <WheelColumn
-          values={minutes}
-          selected={minuteInHour}
-          onSelect={(nextMinute) => onChange(hour * 60 + nextMinute)}
-          label="Minutos"
-        />
+        <View className="flex-row items-center justify-center gap-5 px-3">
+          <WheelColumn
+            values={HOURS}
+            selected={hour}
+            onSelect={(nextHour) => onChange(nextHour * 60 + minuteInHour)}
+            label="Horas"
+          />
+          <Text className="font-raleway-semibold text-2xl text-ink-soft dark:text-ink-invsoft">
+            :
+          </Text>
+          <WheelColumn
+            values={minutes}
+            selected={minuteInHour}
+            onSelect={(nextMinute) => onChange(hour * 60 + nextMinute)}
+            label="Minutos"
+          />
+        </View>
       </View>
     </View>
   );
